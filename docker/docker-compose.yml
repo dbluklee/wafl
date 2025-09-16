@@ -1,0 +1,559 @@
+version: '3.8'
+
+networks:
+  wafl-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+
+volumes:
+  postgres-data:
+  redis-data:
+  rabbitmq-data:
+
+services:
+  # Infrastructure Services
+  postgres:
+    image: postgres:15-alpine
+    container_name: wafl-postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
+      POSTGRES_DB: ${POSTGRES_DB:-aipos}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ../scripts/init-db.sh:/docker-entrypoint-initdb.d/init-db.sh
+    networks:
+      - wafl-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: wafl-redis
+    command: redis-server --appendonly yes
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - wafl-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: wafl-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-guest}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-guest}
+    ports:
+      - "${RABBITMQ_PORT:-5672}:5672"
+      - "${RABBITMQ_MANAGEMENT_PORT:-15672}:15672"
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    networks:
+      - wafl-network
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "check_port_connectivity"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  # Backend Core Services
+  auth-service:
+    build:
+      context: ../backend/core/auth-service
+      dockerfile: Dockerfile
+    container_name: wafl-auth-service
+    environment:
+      - NODE_ENV=${NODE_ENV:-development}
+      - DATABASE_URL=${DATABASE_URL}
+      - REDIS_URL=${REDIS_URL}
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_EXPIRES_IN=${JWT_EXPIRES_IN:-7d}
+    ports:
+      - "3001:3001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    networks:
+      - wafl-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  store-management-service:
+    build:
+      context: ../backend/core/store-management-service
+      dockerfile: Dockerfile
+    container_name: wafl-store-management-service
+    environment:
+      - NODE_ENV=${NODE_ENV:-development}
+      - DATABASE_URL=${DATABASE_URL}
+      - REDIS_URL=${REDIS_URL}
+      - AUTH_SERVICE_URL=${AUTH_SERVICE_URL}
+    ports:
+      - "3002:3002"
+    depends_on:
+      - auth-service
+      - postgres
+      - redis
+    networks:
+      - wafl-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3002/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  dashboard-service:
+    build:
+      context: ../backend/core/dashboard-service
+      dockerfile: Dockerfile
+    container_name: wafl-dashboard-service
+    environment:
+      - NODE_ENV=${NODE_ENV:-development}
+      - DATABASE_URL=${DATABASE_URL}
+      - REDIS_URL=${REDIS_URL}
+      - AUTH_SERVICE_URL=${AUTH_SERVICE_URL}
+    ports:
+      - "3003:3003"
+    depends_on:
+      - auth-service
+      - postgres
+      - redis
+    networks:
+      - wafl-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3003/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  order-service:
+    build:
+      context: ../backend/core/order-service
+      dockerfile: Dockerfile
+    container_name: wafl-order-service
+    environment:
+      - NODE_ENV=${NODE_ENV:-development}
+      - DATABASE_URL=${DATABASE_URL}
+      - REDIS_URL=${REDIS_URL}
+      - RABBITMQ_URL=${RABBITMQ_URL}
+      - AUTH_SERVICE_URL=${AUTH_SERVICE_URL}
+      - STORE_SERVICE_URL=${STORE_SERVICE_URL}
+    ports:
+      - "3004:3004"
+    depends_on:
+      - auth-service
+      - store-management-service
+      - postgres
+      - redis
+      - rabbitmq
+    networks:
+      - wafl-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3004/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  user-profile-service:
+    build:
+      context: ../backend/core/user-profile-service
+      dockerfile: Dockerfile
+    container_name: wafl-user-profile-service
+    environment:
+      - NODE_ENV=${NODE_ENV:-development}
+      - DATABASE_URL=${DATABASE_URL}
+      - REDIS_URL=${REDIS_URL}
+      - AUTH_SERVICE_URL=${AUTH_SERVICE_URL}
+    ports:
+      - "3009:3009"
+    depends_on:
+      - auth-service
+      - postgres
+      - redis
+    networks:
+      - wafl-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3009/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  history-service:
+    build:
+      context: ../backend/core/history-service
+      dockerfile: Dockerfile
+    container_name: wafl-history-service
+    environment:
+      - NODE_ENV=${NODE_ENV:-development}
+      - DATABASE_URL=${DATABASE_URL}
+      - REDIS_URL=${REDIS_URL}
+      - AUTH_SERVICE_URL=${AUTH_SERVICE_URL}
+    ports:
+      - "3010:3010"
+    depends_on:
+      - auth-service
+      - postgres
+      - redis
+    networks:
+      - wafl-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3010/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  # Backend Support Services
+  api-gateway:
+    build:
+      context: ../backend/support/api-gateway
+      dockerfile: Dockerfile
+    container_name: wafl-api-gateway
+    environment:
+      - NODE_ENV=${NODE_ENV:-development}
+      - REDIS_URL=${REDIS_URL}
+      - AUTH_SERVICE_URL=${AUTH_SERVICE_URL}
+      - STORE_SERVICE_URL=${STORE_SERVICE_URL}
+      - ORDER_SERVICE_URL=${ORDER_SERVICE_URL}
+      - PAYMENT_SERVICE_URL=${PAYMENT_SERVICE_URL}
+    ports:
+      - "3000:3000"
+    depends_on:
+      - auth-service
+      - store-management-service
+      - order-service
+      - redis
+    networks:
+      - wafl-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  payment-service:
+    build:
+      context: ../backend/support/payment-service
+      dockerfile: Dockerfile
+    container_name: wafl-payment-service
+    environment:
+      - NODE_ENV=${NODE_ENV:-development}
+      - DATABASE_URL=${DATABASE_URL}
+      - REDIS_URL=${REDIS_URL}
+      - PG_API_KEY=${PG_API_KEY}
+      - AUTH_SERVICE_URL=${AUTH_SERVICE_URL}
+    ports:
+      - "3005:3005"
+    depends_on:
+      - auth-service
+      - postgres
+      - redis
+    networks:
+      - wafl-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3005/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  ai-service:
+    build:
+      context: ../backend/support/ai-service
+      dockerfile: Dockerfile
+    container_name: wafl-ai-service
+    environment:
+      - NODE_ENV=${NODE_ENV:-development}
+      - DATABASE_URL=${DATABASE_URL}
+      - REDIS_URL=${REDIS_URL}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - AUTH_SERVICE_URL=${AUTH_SERVICE_URL}
+    ports:
+      - "3006:3006"
+    depends_on:
+      - auth-service
+      - postgres
+      - redis
+    networks:
+      - wafl-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3006/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  analytics-service:
+    build:
+      context: ../backend/support/analytics-service
+      dockerfile: Dockerfile
+    container_name: wafl-analytics-service
+    environment:
+      - NODE_ENV=${NODE_ENV:-development}
+      - DATABASE_URL=${DATABASE_URL}
+      - REDIS_URL=${REDIS_URL}
+      - AUTH_SERVICE_URL=${AUTH_SERVICE_URL}
+      - AI_SERVICE_URL=${AI_SERVICE_URL}
+    ports:
+      - "3007:3007"
+    depends_on:
+      - auth-service
+      - ai-service
+      - postgres
+      - redis
+    networks:
+      - wafl-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3007/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  notification-service:
+    build:
+      context: ../backend/support/notification-service
+      dockerfile: Dockerfile
+    container_name: wafl-notification-service
+    environment:
+      - NODE_ENV=${NODE_ENV:-development}
+      - DATABASE_URL=${DATABASE_URL}
+      - REDIS_URL=${REDIS_URL}
+      - RABBITMQ_URL=${RABBITMQ_URL}
+      - SMS_API_KEY=${SMS_API_KEY}
+      - AUTH_SERVICE_URL=${AUTH_SERVICE_URL}
+    ports:
+      - "3008:3008"
+    depends_on:
+      - auth-service
+      - postgres
+      - redis
+      - rabbitmq
+    networks:
+      - wafl-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3008/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  scraping-service:
+    build:
+      context: ../backend/support/scraping-service
+      dockerfile: Dockerfile
+    container_name: wafl-scraping-service
+    environment:
+      - NODE_ENV=${NODE_ENV:-development}
+      - DATABASE_URL=${DATABASE_URL}
+      - REDIS_URL=${REDIS_URL}
+      - AUTH_SERVICE_URL=${AUTH_SERVICE_URL}
+      - AI_SERVICE_URL=${AI_SERVICE_URL}
+    ports:
+      - "3011:3011"
+    depends_on:
+      - auth-service
+      - ai-service
+      - postgres
+      - redis
+    networks:
+      - wafl-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3011/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  qr-service:
+    build:
+      context: ../backend/support/qr-service
+      dockerfile: Dockerfile
+    container_name: wafl-qr-service
+    environment:
+      - NODE_ENV=${NODE_ENV:-development}
+      - DATABASE_URL=${DATABASE_URL}
+      - REDIS_URL=${REDIS_URL}
+      - AUTH_SERVICE_URL=${AUTH_SERVICE_URL}
+    ports:
+      - "3012:3012"
+    depends_on:
+      - auth-service
+      - postgres
+      - redis
+    networks:
+      - wafl-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3012/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  inventory-service:
+    build:
+      context: ../backend/support/inventory-service
+      dockerfile: Dockerfile
+    container_name: wafl-inventory-service
+    environment:
+      - NODE_ENV=${NODE_ENV:-development}
+      - DATABASE_URL=${DATABASE_URL}
+      - REDIS_URL=${REDIS_URL}
+      - AUTH_SERVICE_URL=${AUTH_SERVICE_URL}
+    ports:
+      - "3013:3013"
+    depends_on:
+      - auth-service
+      - postgres
+      - redis
+    networks:
+      - wafl-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3013/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  delivery-service:
+    build:
+      context: ../backend/support/delivery-service
+      dockerfile: Dockerfile
+    container_name: wafl-delivery-service
+    environment:
+      - NODE_ENV=${NODE_ENV:-development}
+      - DATABASE_URL=${DATABASE_URL}
+      - REDIS_URL=${REDIS_URL}
+      - AUTH_SERVICE_URL=${AUTH_SERVICE_URL}
+    ports:
+      - "3014:3014"
+    depends_on:
+      - auth-service
+      - postgres
+      - redis
+    networks:
+      - wafl-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3014/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  hardware-service:
+    build:
+      context: ../backend/support/hardware-service
+      dockerfile: Dockerfile
+    container_name: wafl-hardware-service
+    environment:
+      - NODE_ENV=${NODE_ENV:-development}
+      - DATABASE_URL=${DATABASE_URL}
+      - REDIS_URL=${REDIS_URL}
+      - AUTH_SERVICE_URL=${AUTH_SERVICE_URL}
+    ports:
+      - "3015:3015"
+    depends_on:
+      - auth-service
+      - postgres
+      - redis
+    networks:
+      - wafl-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3015/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  # Frontend Services
+  pos-admin-web:
+    build:
+      context: ../frontend/pos-admin-web
+      dockerfile: Dockerfile
+      args:
+        - REACT_APP_API_URL=${EXTERNAL_API_URL:-http://localhost}
+    container_name: wafl-pos-admin-web
+    ports:
+      - "4000:80"
+    depends_on:
+      - api-gateway
+    networks:
+      - wafl-network
+    restart: unless-stopped
+
+  qr-order-web:
+    build:
+      context: ../frontend/qr-order-web
+      dockerfile: Dockerfile
+      args:
+        - REACT_APP_API_URL=${EXTERNAL_API_URL:-http://localhost}
+    container_name: wafl-qr-order-web
+    ports:
+      - "4001:80"
+    depends_on:
+      - api-gateway
+    networks:
+      - wafl-network
+    restart: unless-stopped
+
+  kitchen-display-web:
+    build:
+      context: ../frontend/kitchen-display-web
+      dockerfile: Dockerfile
+      args:
+        - REACT_APP_API_URL=${EXTERNAL_API_URL:-http://localhost}
+    container_name: wafl-kitchen-display-web
+    ports:
+      - "4002:80"
+    depends_on:
+      - api-gateway
+    networks:
+      - wafl-network
+    restart: unless-stopped
+
+  # Reverse Proxy
+  nginx:
+    build:
+      context: ../nginx
+      dockerfile: Dockerfile
+    container_name: wafl-nginx
+    ports:
+      - "${NGINX_PORT:-80}:80"
+      - "${NGINX_SSL_PORT:-443}:443"
+    depends_on:
+      - api-gateway
+      - pos-admin-web
+      - qr-order-web
+      - kitchen-display-web
+    networks:
+      - wafl-network
+    volumes:
+      - ../nginx/ssl:/etc/nginx/ssl:ro
+    restart: unless-stopped

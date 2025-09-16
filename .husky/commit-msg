@@ -1,0 +1,37 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+# 커밋 메시지 형식 검증
+# 형식: type(scope): description
+# 예: feat(auth): add JWT authentication
+
+commit_regex='^(feat|fix|docs|style|refactor|test|chore|perf|build|ci)(\(.+\))?: .{1,50}'
+
+if ! grep -qE "$commit_regex" "$1"; then
+  echo ""
+  echo "❌ Invalid commit message format!"
+  echo ""
+  echo "커밋 메시지 형식이 올바르지 않습니다."
+  echo ""
+  echo "올바른 형식:"
+  echo "  type(scope): description"
+  echo ""
+  echo "Types:"
+  echo "  feat:     새로운 기능 추가"
+  echo "  fix:      버그 수정"
+  echo "  docs:     문서 변경"
+  echo "  style:    코드 포맷팅, 세미콜론 누락 등"
+  echo "  refactor: 코드 리팩토링"
+  echo "  test:     테스트 추가/수정"
+  echo "  chore:    빌드 과정 또는 보조 도구 변경"
+  echo "  perf:     성능 개선"
+  echo "  build:    빌드 시스템 변경"
+  echo "  ci:       CI 설정 변경"
+  echo ""
+  echo "예시:"
+  echo "  feat(auth): JWT 토큰 인증 추가"
+  echo "  fix(order): 주문 계산 오류 수정"
+  echo "  docs(readme): 설치 가이드 업데이트"
+  echo ""
+  exit 1
+fi

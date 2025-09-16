@@ -1,0 +1,247 @@
+version: '3.8'
+
+# Development overrides for docker-compose.yml
+services:
+  # Infrastructure - no changes needed for dev
+
+  # Backend Core Services - Development overrides
+  auth-service:
+    build:
+      target: development
+    environment:
+      - NODE_ENV=development
+      - DEBUG_MODE=true
+      - HOT_RELOAD=true
+    volumes:
+      - ../backend/core/auth-service/src:/app/src:ro
+      - ../backend/shared:/app/shared:ro
+    command: npm run dev
+
+  store-management-service:
+    build:
+      target: development
+    environment:
+      - NODE_ENV=development
+      - DEBUG_MODE=true
+      - HOT_RELOAD=true
+    volumes:
+      - ../backend/core/store-management-service/src:/app/src:ro
+      - ../backend/shared:/app/shared:ro
+    command: npm run dev
+
+  dashboard-service:
+    build:
+      target: development
+    environment:
+      - NODE_ENV=development
+      - DEBUG_MODE=true
+      - HOT_RELOAD=true
+    volumes:
+      - ../backend/core/dashboard-service/src:/app/src:ro
+      - ../backend/shared:/app/shared:ro
+    command: npm run dev
+
+  order-service:
+    build:
+      target: development
+    environment:
+      - NODE_ENV=development
+      - DEBUG_MODE=true
+      - HOT_RELOAD=true
+    volumes:
+      - ../backend/core/order-service/src:/app/src:ro
+      - ../backend/shared:/app/shared:ro
+    command: npm run dev
+
+  user-profile-service:
+    build:
+      target: development
+    environment:
+      - NODE_ENV=development
+      - DEBUG_MODE=true
+      - HOT_RELOAD=true
+    volumes:
+      - ../backend/core/user-profile-service/src:/app/src:ro
+      - ../backend/shared:/app/shared:ro
+    command: npm run dev
+
+  history-service:
+    build:
+      target: development
+    environment:
+      - NODE_ENV=development
+      - DEBUG_MODE=true
+      - HOT_RELOAD=true
+    volumes:
+      - ../backend/core/history-service/src:/app/src:ro
+      - ../backend/shared:/app/shared:ro
+    command: npm run dev
+
+  # Backend Support Services - Development overrides
+  api-gateway:
+    build:
+      target: development
+    environment:
+      - NODE_ENV=development
+      - DEBUG_MODE=true
+      - HOT_RELOAD=true
+    volumes:
+      - ../backend/support/api-gateway/src:/app/src:ro
+      - ../backend/shared:/app/shared:ro
+    command: npm run dev
+
+  payment-service:
+    build:
+      target: development
+    environment:
+      - NODE_ENV=development
+      - DEBUG_MODE=true
+      - HOT_RELOAD=true
+    volumes:
+      - ../backend/support/payment-service/src:/app/src:ro
+      - ../backend/shared:/app/shared:ro
+    command: npm run dev
+
+  ai-service:
+    build:
+      target: development
+    environment:
+      - NODE_ENV=development
+      - DEBUG_MODE=true
+      - HOT_RELOAD=true
+    volumes:
+      - ../backend/support/ai-service/src:/app/src:ro
+      - ../backend/shared:/app/shared:ro
+    command: npm run dev
+
+  analytics-service:
+    build:
+      target: development
+    environment:
+      - NODE_ENV=development
+      - DEBUG_MODE=true
+      - HOT_RELOAD=true
+    volumes:
+      - ../backend/support/analytics-service/src:/app/src:ro
+      - ../backend/shared:/app/shared:ro
+    command: npm run dev
+
+  notification-service:
+    build:
+      target: development
+    environment:
+      - NODE_ENV=development
+      - DEBUG_MODE=true
+      - HOT_RELOAD=true
+    volumes:
+      - ../backend/support/notification-service/src:/app/src:ro
+      - ../backend/shared:/app/shared:ro
+    command: npm run dev
+
+  scraping-service:
+    build:
+      target: development
+    environment:
+      - NODE_ENV=development
+      - DEBUG_MODE=true
+      - HOT_RELOAD=true
+    volumes:
+      - ../backend/support/scraping-service/src:/app/src:ro
+      - ../backend/shared:/app/shared:ro
+    command: npm run dev
+
+  qr-service:
+    build:
+      target: development
+    environment:
+      - NODE_ENV=development
+      - DEBUG_MODE=true
+      - HOT_RELOAD=true
+    volumes:
+      - ../backend/support/qr-service/src:/app/src:ro
+      - ../backend/shared:/app/shared:ro
+    command: npm run dev
+
+  inventory-service:
+    build:
+      target: development
+    environment:
+      - NODE_ENV=development
+      - DEBUG_MODE=true
+      - HOT_RELOAD=true
+    volumes:
+      - ../backend/support/inventory-service/src:/app/src:ro
+      - ../backend/shared:/app/shared:ro
+    command: npm run dev
+
+  delivery-service:
+    build:
+      target: development
+    environment:
+      - NODE_ENV=development
+      - DEBUG_MODE=true
+      - HOT_RELOAD=true
+    volumes:
+      - ../backend/support/delivery-service/src:/app/src:ro
+      - ../backend/shared:/app/shared:ro
+    command: npm run dev
+
+  hardware-service:
+    build:
+      target: development
+    environment:
+      - NODE_ENV=development
+      - DEBUG_MODE=true
+      - HOT_RELOAD=true
+    volumes:
+      - ../backend/support/hardware-service/src:/app/src:ro
+      - ../backend/shared:/app/shared:ro
+    command: npm run dev
+
+  # Frontend Services - Development overrides
+  pos-admin-web:
+    build:
+      target: development
+    environment:
+      - NODE_ENV=development
+      - REACT_APP_API_URL=http://localhost:3000
+      - FAST_REFRESH=true
+    volumes:
+      - ../frontend/pos-admin-web/src:/app/src:ro
+      - ../frontend/pos-admin-web/public:/app/public:ro
+    ports:
+      - "4000:3000"  # Vite dev server port
+    command: npm run dev
+
+  qr-order-web:
+    build:
+      target: development
+    environment:
+      - NODE_ENV=development
+      - REACT_APP_API_URL=http://localhost:3000
+      - FAST_REFRESH=true
+    volumes:
+      - ../frontend/qr-order-web/src:/app/src:ro
+      - ../frontend/qr-order-web/public:/app/public:ro
+    ports:
+      - "4001:3000"  # Vite dev server port
+    command: npm run dev
+
+  kitchen-display-web:
+    build:
+      target: development
+    environment:
+      - NODE_ENV=development
+      - REACT_APP_API_URL=http://localhost:3000
+      - FAST_REFRESH=true
+    volumes:
+      - ../frontend/kitchen-display-web/src:/app/src:ro
+      - ../frontend/kitchen-display-web/public:/app/public:ro
+    ports:
+      - "4002:3000"  # Vite dev server port
+    command: npm run dev
+
+  # Nginx - Development settings
+  nginx:
+    volumes:
+      - ../nginx/nginx.dev.conf:/etc/nginx/nginx.conf:ro

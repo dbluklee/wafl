@@ -1,0 +1,41 @@
+{
+  "name": "wafl-pos-system",
+  "version": "1.0.0",
+  "description": "AI POS System - AI Agent 기반 차세대 외식업 주문결제 시스템",
+  "private": true,
+  "workspaces": [
+    "frontend/*",
+    "backend/core/*",
+    "backend/support/*",
+    "backend/shared/*"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev:frontend\" \"npm run dev:backend\"",
+    "build": "npm run build --workspaces",
+    "test": "npm run test --workspaces",
+    "lint": "eslint . --ext .ts,.tsx,.js,.jsx --fix",
+    "lint:check": "eslint . --ext .ts,.tsx,.js,.jsx",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "type-check": "tsc --noEmit",
+    "docker:build": "make build",
+    "docker:dev": "make dev",
+    "docker:up": "make up",
+    "docker:down": "make down",
+    "prepare": "husky install"
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^6.21.0",
+    "@typescript-eslint/parser": "^6.21.0",
+    "concurrently": "^8.2.2",
+    "eslint": "^8.56.0",
+    "husky": "^8.0.3",
+    "lint-staged": "^15.2.0",
+    "prettier": "^3.2.5",
+    "typescript": "^5.3.3"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "npm": ">=10.0.0"
+  }
+}
