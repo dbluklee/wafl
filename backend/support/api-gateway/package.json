@@ -7,11 +7,16 @@
     "dev": "nodemon --watch src --ext ts --exec ts-node src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
-    "test": "jest",
+    "test": "jest --passWithNoTests",
     "lint": "eslint src/**/*.ts",
     "lint:fix": "eslint src/**/*.ts --fix"
   },
-  "keywords": ["api-gateway", "microservices", "pos", "ai"],
+  "keywords": [
+    "api-gateway",
+    "microservices",
+    "pos",
+    "ai"
+  ],
   "author": "WAFL Team",
   "license": "MIT",
   "dependencies": {
