@@ -83,33 +83,52 @@
 
 ## 🎯 다음 단계 작업들 (Phase 2 계속: 비즈니스 로직 구현)
 
-### 🔥 최우선 작업: API Gateway Service 구현 **[진행률: 0%]**
+### 🎉 최우선 작업: API Gateway Service 구현 **[진행률: 100%]** ✅ COMPLETED!
 **위치**: `backend/support/api-gateway/` (포트 8080 - 메인 엔트리 포인트)
-**현재 상태**: 빈 디렉토리
+**현재 상태**: 완전 구현 및 실행 중
 **의존성**: Auth Service 완료 ✅
+**완료일**: 2025.09.16
 
-- [ ] **🚀 기본 설정 및 프로젝트 구조**
-  - [ ] Express + TypeScript 프로젝트 설정
-  - [ ] Auth Service 패턴 참조하여 동일한 구조 적용
-  - [ ] package.json 및 TypeScript 설정
-  - [ ] Dockerfile 작성 (Auth Service 참조)
+- [x] **🚀 기본 설정 및 프로젝트 구조** ✅ 완료
+  - [x] Express + TypeScript 프로젝트 설정
+  - [x] Auth Service 패턴 참조하여 동일한 구조 적용
+  - [x] package.json 및 TypeScript 설정 (26개 의존성)
+  - [x] Dockerfile 작성 (멀티스테이지 빌드)
+  - [x] TypeScript 타입 정의 완료 (IServiceConfig, IRouteConfig 등)
 
-- [ ] **중앙 라우팅 허브 구현**
-  - [ ] Auth Service 연동 미들웨어
-  - [ ] 서비스별 프록시 라우팅 (auth-service:3001 등)
-  - [ ] JWT 토큰 검증 미들웨어
-  - [ ] 사용자 권한 확인 (owner/staff)
+- [x] **중앙 라우팅 허브 구현** ✅ 완료
+  - [x] Auth Service 연동 미들웨어 (JWT 검증)
+  - [x] 12개 서비스 프록시 라우팅 (auth:3001, store:3002, order:3004 등)
+  - [x] JWT 토큰 검증 미들웨어
+  - [x] 역할 기반 접근 제어 (owner/staff/customer)
+  - [x] 서비스별 라우트 설정 및 권한 관리
 
-- [ ] **보안 및 성능**
-  - [ ] Rate Limiting 구현 (서비스별, 사용자별)
-  - [ ] CORS 및 보안 설정 (헬멧, 압축)
-  - [ ] 로깅 시스템 (요청/응답 로깅)
-  - [ ] Health Check 통합 모니터링
+- [x] **보안 및 성능** ✅ 완료
+  - [x] Rate Limiting 구현 (글로벌 + 서비스별)
+  - [x] CORS 및 보안 설정 (Helmet, 압축)
+  - [x] 로깅 시스템 (Morgan + 커스텀 로깅)
+  - [x] Health Check 통합 모니터링 (30초 간격)
+  - [x] 서비스 디스커버리 및 프록시 라우팅
 
-### 📈 두 번째 우선순위: Store Management Service 구현 **[진행률: 0%]**
+- [x] **추가 구현된 기능** ✅ 완료
+  - [x] WebSocket 프록시 관리 (실시간 통신)
+  - [x] 서비스 헬스체크 자동화 (12개 서비스)
+  - [x] 메트릭 수집 및 모니터링 엔드포인트
+  - [x] 에러 처리 및 표준화된 응답 형식
+  - [x] 타임아웃 처리 및 서킷 브레이커 패턴
+
+**🎯 테스트 검증 완료 상태**:
+- ✅ 서버 실행 확인 (포트 8080)
+- ✅ Health Check API: `/api/v1/gateway/health`
+- ✅ 서비스 목록 API: `/api/v1/gateway/services`
+- ✅ 메트릭 API: `/api/v1/gateway/metrics`
+- ✅ Auth Service 연동 확인 (3001 포트)
+- ✅ 프록시 라우팅 테스트 완료
+
+### 📈 새로운 최우선 작업: Store Management Service 구현 **[진행률: 0%]**
 **위치**: `backend/core/store-management-service/` (포트 3002)
 **현재 상태**: 빈 디렉토리
-**의존성**: Auth Service ✅, API Gateway 권장
+**의존성**: Auth Service ✅, API Gateway ✅
 
 - [ ] **🏪 기본 설정 및 매장 관리**
   - [ ] Auth Service 구조 복사하여 기본 프로젝트 설정
@@ -119,10 +138,10 @@
   - [ ] 테이블 CRUD API (QR 코드 관리)
   - [ ] 테스트 코드 작성
 
-### 📊 세 번째 우선순위: Order Service 구현 **[진행률: 0%]**
+### 📊 두 번째 우선순위: Order Service 구현 **[진행률: 0%]**
 **위치**: `backend/core/order-service/` (포트 3004)
 **현재 상태**: 빈 디렉토리
-**의존성**: Auth Service ✅, Store Management Service 권장
+**의존성**: Auth Service ✅, API Gateway ✅, Store Management Service 권장
 
 - [ ] **🛒 주문 관리 시스템**
   - [ ] 기본 프로젝트 설정 (Auth Service 패턴 적용)
@@ -131,10 +150,10 @@
   - [ ] 주문 항목 관리 (메뉴, 수량, 옵션)
   - [ ] 실시간 주문 알림 준비
 
-### 🎨 네 번째 우선순위: Dashboard Service 구현 **[진행률: 0%]**
+### 🎨 세 번째 우선순위: Dashboard Service 구현 **[진행률: 0%]**
 **위치**: `backend/core/dashboard-service/` (포트 3003)
 **현재 상태**: 빈 디렉토리
-**의존성**: Auth Service ✅, Order Service 권장
+**의존성**: Auth Service ✅, API Gateway ✅, Order Service 권장
 
 - [ ] **📈 실시간 대시보드**
   - [ ] 기본 프로젝트 설정
@@ -145,7 +164,7 @@
   - [ ] 통계 데이터 API
 
 ## 🎨 Frontend 개발 **[진행률: 0%]**
-**의존성**: API Gateway + 최소 3개 백엔드 서비스 필요
+**의존성**: API Gateway ✅ + 최소 3개 백엔드 서비스 필요
 
 - [ ] **POS Admin Web (포트 4000)** - ⚠️ 구현 필요
   - [ ] React + TypeScript 프로젝트 설정
@@ -255,22 +274,23 @@ curl -X POST http://localhost:3001/api/v1/auth/login/pin \
 - [ ] XSS/CSRF 방어
 - [ ] HTTPS 암호화 통신
 
-## 📊 현재 진행률 요약 (2025.09.16 기준)
+## 📊 현재 진행률 요약 (2025.09.16 업데이트)
 
-### ✅ 완료 (35%)
+### ✅ 완료 (40%)
 - 기초 인프라 (25%)
 - Auth Service 완전 구현 (10%)
+- API Gateway Service 완전 구현 (5%) **🎉 NEW!**
 
 ### 🔄 다음 우선순위 (15%)
-- API Gateway Service (5%)
-- Store Management Service (5%)
+- Store Management Service (5%) **📈 최우선 작업**
 - Order Service (5%)
+- Dashboard Service (5%)
 
-### ⏳ 대기 중 (50%)
-- 나머지 13개 백엔드 서비스 (35%)
+### ⏳ 대기 중 (45%)
+- 나머지 12개 백엔드 서비스 (30%)
 - 3개 프론트엔드 애플리케이션 (15%)
 
 ---
 
-**🎯 다음 목표**: API Gateway Service 구현으로 마이크로서비스 아키텍처의 중앙 허브 완성
+**🎯 다음 목표**: Store Management Service 구현으로 매장/메뉴 관리 기능 완성
 **🔗 참고**: Auth Service (`backend/core/auth-service/`)가 완전한 구현 예제로 활용 가능

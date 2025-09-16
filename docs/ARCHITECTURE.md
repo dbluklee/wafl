@@ -21,11 +21,11 @@ services:
   - rabbitmq:5672/15672
 
   # Backend Services (16)
-  - api-gateway:3000
-  - auth-service:3001
-  - store-management-service:3002
-  - dashboard-service:3003
-  - order-service:3004
+  - api-gateway:8080        # ✅ 완전 구현됨 (중앙 라우팅 허브)
+  - auth-service:3001       # ✅ 완전 구현됨 (인증/권한 관리)
+  - store-management-service:3002  # 📈 다음 우선 구현 대상
+  - dashboard-service:3003         # ⚠️ 구현 대기
+  - order-service:3004             # ⚠️ 구현 대기
   - payment-service:3005
   - ai-service:3006
   - analytics-service:3007
