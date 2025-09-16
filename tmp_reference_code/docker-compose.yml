@@ -1,0 +1,60 @@
+version: '3.8'
+
+services:
+  burnana-database:
+    image: postgres:15-alpine
+    container_name: burnana-postgres
+    environment:
+      POSTGRES_DB: burnana_pos
+      POSTGRES_USER: wk
+      POSTGRES_PASSWORD: aldkfl
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U wk -d burnana_pos"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  burnana-backend:
+    build: ./backend
+    container_name: burnana-api
+    ports:
+      - "3002:3002"
+    environment:
+      - NODE_ENV=production
+      - PORT=3002
+      - DB_HOST=burnana-database
+      - DB_PORT=5432
+      - DB_NAME=burnana_pos
+      - DB_USER=wk
+      - DB_PASSWORD=aldkfl
+    depends_on:
+      burnana-database:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3002/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  burnana-frontend:
+    build: ./frontend
+    container_name: burnana-ui
+    ports:
+      - "3000:80"
+    depends_on:
+      - burnana-backend
+    environment:
+      - VITE_API_BASE_URL=http://localhost:3002/api
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+    driver: local

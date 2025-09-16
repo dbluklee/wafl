@@ -1,0 +1,30 @@
+{
+  "name": "burnanapos",
+  "version": "1.0.0",
+  "description": "Restaurant POS App - BurnanaPOS",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:backend": "cd backend && npm run dev",
+    "dev:frontend": "cd frontend && npm run dev",
+    "build": "npm run build:backend && npm run build:frontend",
+    "build:backend": "cd backend && npm run build",
+    "build:frontend": "cd frontend && npm run build",
+    "start": "cd backend && npm start",
+    "zeplin-connect": "zeplin connect",
+    "zeplin-connect-dev-mode": "zeplin connect --dev"
+  },
+  "devDependencies": {
+    "@zeplin/cli": "^2.1.1",
+    "concurrently": "^9.2.1"
+  },
+  "keywords": [
+    "restaurant",
+    "pos",
+    "react",
+    "nodejs",
+    "typescript"
+  ],
+  "author": "",
+  "license": "ISC"
+}

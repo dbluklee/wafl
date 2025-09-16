@@ -1,0 +1,21 @@
+/* Welcome page background gradient */
+.welcome-bg-gradient {
+  background: linear-gradient(135deg, 
+    #1a1a2e 0%,
+    #16213e 20%,
+    #0f3460 40%,
+    #533483 60%,
+    #e94560 80%,
+    #f27121 100%
+  );
+}
+
+/* Alternative CSS-only gradient matching the design */
+.welcome-bg {
+  background: linear-gradient(135deg, 
+    rgba(26, 26, 46, 1) 0%,
+    rgba(83, 52, 131, 1) 50%,
+    rgba(233, 69, 96, 1) 80%,
+    rgba(242, 113, 33, 1) 100%
+  );
+}
