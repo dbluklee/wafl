@@ -25,7 +25,7 @@ export const handleValidationErrors = (
 
   if (!errors.isEmpty()) {
     const validationErrors: IValidationError[] = errors.array().map((error) => ({
-      field: 'param' in error ? error.param : 'unknown',
+      field: ('param' in error ? error.param : 'unknown') as string,
       message: error.msg,
       value: 'value' in error ? error.value : undefined,
     }));
@@ -48,7 +48,7 @@ export const globalErrorHandler = (
   error: Error,
   req: Request,
   res: Response<IApiResponse>,
-  next: NextFunction
+  _next: NextFunction
 ): void => {
   console.error('[Payment Service Error]:', {
     message: error.message,

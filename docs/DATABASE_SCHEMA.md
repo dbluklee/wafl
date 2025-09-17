@@ -469,7 +469,7 @@ CREATE TRIGGER update_analytics_daily_updated_at BEFORE UPDATE ON analytics_dail
 ## 🎯 User Profile Service 관련 테이블
 
 ### 핵심 테이블
-User Profile Service(포트 3009)에서 주로 사용하는 테이블들:
+User Profile Service(포트 4009)에서 주로 사용하는 테이블들:
 
 #### users 테이블 (사용자 정보)
 ```sql
@@ -600,5 +600,5 @@ VALUES (1001, 'Demo Restaurant', '123-45-67890', 'demo@restaurant.com', 'active'
 
 **개발 참조**:
 - User Profile Service는 주로 `users`, `stores` 테이블 사용
-- 포트 3009에서 8개 API 제공
+- 포트 4009에서 8개 API 제공
 - JWT 인증 및 역할 기반 접근 제어 적용

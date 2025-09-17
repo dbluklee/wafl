@@ -11,27 +11,27 @@
 ## 1. 개요
 
 ### 1.1 기본 정보
-- **Base URL**: `http://localhost:3000` (API Gateway)
+- **Base URL**: `http://localhost:4000` (API Gateway)
 - **API Version**: v1
-- **Gateway Port**: 3000
+- **Gateway Port**: 4000
 
 ### 1.2 서비스 포트 매핑
 
 | 서비스명 | 포트 | 담당 영역 | 상태 |
 |---------|------|----------|------|
-| api-gateway | 3000 | API 라우팅 | ✅ 운영 중 |
-| auth-service | 3001 | 인증/인가 | ✅ 완료 |
-| store-management-service | 3002 | 매장 설정 | ✅ 완료 |
-| dashboard-service | 3003 | 실시간 현황 | ✅ 완료 |
-| order-service | 3004 | 주문 관리 | ✅ 완료 |
-| payment-service | 3005 | 결제 처리 | ✅ 완료 |
-| ai-service | 3006 | AI 기능 | ⚠️ 다음 구현 |
-| analytics-service | 3007 | 매출 분석 | ⚠️ 계획 중 |
-| notification-service | 3008 | 실시간 알림 | ⚠️ 계획 중 |
-| user-profile-service | 3009 | 계정 관리 | ✅ 완료 |
-| history-service | 3010 | 작업 이력 | ⚠️ 다음 구현 |
-| scraping-service | 3011 | 메뉴 스크래핑 | ⚠️ 계획 중 |
-| qr-service | 3012 | QR 관리 | ⚠️ 계획 중 |
+| api-gateway | 4000 | API 라우팅 | ✅ 운영 중 |
+| auth-service | 4001 | 인증/인가 | ✅ 완료 |
+| store-management-service | 4002 | 매장 설정 | ✅ 완료 |
+| dashboard-service | 4003 | 실시간 현황 | ✅ 완료 |
+| order-service | 4004 | 주문 관리 | ✅ 완료 |
+| payment-service | 4005 | 결제 처리 | ✅ 완료 |
+| ai-service | 4006 | AI 기능 | ⚠️ 다음 구현 |
+| analytics-service | 4007 | 매출 분석 | ⚠️ 계획 중 |
+| notification-service | 4008 | 실시간 알림 | ⚠️ 계획 중 |
+| user-profile-service | 4009 | 계정 관리 | ✅ 완료 |
+| history-service | 4010 | 작업 이력 | ⚠️ 다음 구현 |
+| scraping-service | 4011 | 메뉴 스크래핑 | ⚠️ 계획 중 |
+| qr-service | 4012 | QR 관리 | ⚠️ 계획 중 |
 
 ## 2. 공통 규격
 
@@ -70,7 +70,7 @@ Accept-Language: {language_code}
 
 ## 3. 서비스별 API
 
-## 🔵 API Gateway 엔드포인트 (포트 3000)
+## 🔵 API Gateway 엔드포인트 (포트 4000)
 
 ### 🟢 Public Routes (인증 불필요)
 ```bash
@@ -85,11 +85,11 @@ GET  /api/v1/gateway/config            # ✅ 설정 정보
 ### 🔵 Proxy Routes (각 마이크로서비스로 전달)
 ```bash
 /api/v1/auth/*           -> auth-service        # ✅ 작동 중
-/api/v1/store/*          -> store-management    # ✅ 작동 중 (포트 3002)
-/api/v1/dashboard/*      -> dashboard-service   # ✅ 작동 중 (포트 3003)
-/api/v1/orders/*         -> order-service       # ✅ 작동 중 (포트 3004)
-/api/v1/payments/*       -> payment-service     # ✅ 작동 중 (포트 3005)
-/api/v1/profile/*        -> user-profile        # ✅ 작동 중 (포트 3009)
+/api/v1/store/*          -> store-management    # ✅ 작동 중 (포트 4002)
+/api/v1/dashboard/*      -> dashboard-service   # ✅ 작동 중 (포트 4003)
+/api/v1/orders/*         -> order-service       # ✅ 작동 중 (포트 4004)
+/api/v1/payments/*       -> payment-service     # ✅ 작동 중 (포트 4005)
+/api/v1/profile/*        -> user-profile        # ✅ 작동 중 (포트 4009)
 /api/v1/ai/*             -> ai-service          # ⚠️ 서비스 대기
 /api/v1/analytics/*      -> analytics-service   # ⚠️ 서비스 대기
 /api/v1/notifications/*  -> notification-service # ⚠️ 서비스 대기
@@ -100,10 +100,10 @@ GET  /api/v1/gateway/config            # ✅ 설정 정보
 
 ### 🔌 WebSocket
 ```bash
-ws://localhost:3000/ws                 # ✅ WebSocket 프록시 실행 중
+ws://localhost:4000/ws                 # ✅ WebSocket 프록시 실행 중
 ```
 
-## 🔵 Auth Service API (포트 3001)
+## 🔵 Auth Service API (포트 4001)
 
 ```bash
 GET  /health                           # ✅ 헬스체크
@@ -134,7 +134,7 @@ Content-Type: application/json
 }
 ```
 
-## 🔵 Store Management Service API (포트 3002)
+## 🔵 Store Management Service API (포트 4002)
 
 ```bash
 GET  /health                                    # ✅ 헬스체크
@@ -173,7 +173,7 @@ POST   /api/v1/store/tables/:id/regenerate-qr   # ✅ QR 코드 재생성
 POST   /api/v1/store/tables/bulk                # ✅ 테이블 일괄 생성
 ```
 
-## 🔵 Order Service API (포트 3004)
+## 🔵 Order Service API (포트 4004)
 
 ```bash
 GET  /health                                    # ✅ 헬스체크
@@ -200,7 +200,7 @@ POST   /api/v1/kitchen/:id/serve                # ✅ 서빙 완료
 PATCH  /api/v1/kitchen/:id/priority             # ✅ 우선순위 설정
 ```
 
-## 🔵 Dashboard Service API (포트 3003)
+## 🔵 Dashboard Service API (포트 4003)
 
 ```bash
 GET  /health                                    # ✅ 헬스체크
@@ -232,7 +232,7 @@ GET    /api/v1/dashboard/logs/table/:tableId    # ✅ 테이블별 로그
 GET    /api/v1/dashboard/logs/stats             # ✅ 로그 통계
 ```
 
-## 🔵 Payment Service API (포트 3005)
+## 🔵 Payment Service API (포트 4005)
 
 ```bash
 GET  /health                                    # ✅ 헬스체크
@@ -249,7 +249,7 @@ POST   /api/v1/payments/:id/receipt             # ✅ 영수증 발행
 POST   /api/v1/payments/callback                # ✅ PG 콜백 처리
 ```
 
-## 🔵 User Profile Service API (포트 3009) **[2025.09.17 재구현 완료]**
+## 🔵 User Profile Service API (포트 4009) **[2025.09.17 재구현 완료]**
 
 **목적**: 사용자 계정 관리 및 직원 관리 (CRM/포인트 시스템 제외)
 **업데이트**: 복잡한 기능 제거, 핵심 기능만 유지
@@ -277,7 +277,7 @@ PATCH  /api/v1/profile/staff/:staffId/status    # ✅ 직원 활성/비활성화
 - ❌ CRM/고객 관리
 - ❌ 포인트/멤버십 시스템
 
-## 🔵 AI Service API (포트 3006) **[계획됨]**
+## 🔵 AI Service API (포트 4006) **[계획됨]**
 
 ```bash
 GET  /health                                    # ⚠️ 구현 예정
@@ -293,7 +293,7 @@ POST   /api/v1/ai/customer/chat                 # ⚠️ 구현 예정
 POST   /api/v1/ai/translate/menu                # ⚠️ 구현 예정
 ```
 
-## 🔵 Analytics Service API (포트 3007) **[계획됨]**
+## 🔵 Analytics Service API (포트 4007) **[계획됨]**
 
 ```bash
 GET  /health                                    # ⚠️ 구현 예정
@@ -304,7 +304,7 @@ GET    /api/v1/analytics/trends                 # ⚠️ 구현 예정
 GET    /api/v1/analytics/ai-suggestions         # ⚠️ 구현 예정
 ```
 
-## 🔵 Notification Service API (포트 3008) **[계획됨]**
+## 🔵 Notification Service API (포트 4008) **[계획됨]**
 
 ```bash
 GET  /health                                    # ⚠️ 구현 예정
@@ -314,7 +314,7 @@ GET    /api/v1/notifications                    # ⚠️ 구현 예정
 PATCH  /api/v1/notifications/:id/read          # ⚠️ 구현 예정
 ```
 
-## 🔵 History Service API (포트 3010) **[계획됨]**
+## 🔵 History Service API (포트 4010) **[계획됨]**
 
 ```bash
 GET  /health                                    # ⚠️ 구현 예정
@@ -325,7 +325,7 @@ POST   /api/v1/history/undo                     # ⚠️ 구현 예정
 POST   /api/v1/history/redo                     # ⚠️ 구현 예정
 ```
 
-## 🔵 Menu Scraping Service API (포트 3011) **[계획됨]**
+## 🔵 Menu Scraping Service API (포트 4011) **[계획됨]**
 
 ```bash
 GET  /health                                    # ⚠️ 구현 예정
@@ -336,7 +336,7 @@ GET    /api/v1/scraping/jobs/:id                # ⚠️ 구현 예정
 POST   /api/v1/scraping/apply/:id               # ⚠️ 구현 예정
 ```
 
-## 🔵 QR Service API (포트 3012) **[계획됨]**
+## 🔵 QR Service API (포트 4012) **[계획됨]**
 
 ```bash
 GET  /health                                    # ⚠️ 구현 예정

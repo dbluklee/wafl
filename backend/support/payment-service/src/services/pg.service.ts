@@ -1,12 +1,11 @@
 import { v4 as uuidv4 } from 'uuid';
 import config from '@/config';
-import { paymentCache } from '@/utils/cache';
+// import { paymentCache } from '@/utils/cache'; // TODO: 향후 캐싱 기능에 사용
 import {
   IMockPGRequest,
   IMockPGResponse,
   IPGResponse,
   IPaymentRequest,
-  TPaymentMethod,
   PaymentServiceError,
 } from '@/types';
 
@@ -41,8 +40,8 @@ export class PGService {
         cardExpiryMonth: request.cardExpiryMonth || '',
         cardExpiryYear: request.cardExpiryYear || '',
         cardCvv: request.cardCvv || '',
-        cardHolderName: request.cardHolderName,
-        description: request.description,
+        cardHolderName: request.cardHolderName || '',
+        description: request.description || '',
       };
 
       await this.simulateNetworkDelay();
@@ -52,11 +51,16 @@ export class PGService {
       const pgResponse: IPGResponse = {
         success: mockResponse.success,
         transactionId: mockResponse.transactionId,
-        approvalNumber: mockResponse.approvalNumber,
         message: mockResponse.message,
-        errorCode: mockResponse.errorCode,
         rawResponse: mockResponse,
       };
+
+      if (mockResponse.approvalNumber) {
+        pgResponse.approvalNumber = mockResponse.approvalNumber;
+      }
+      if (mockResponse.errorCode) {
+        pgResponse.errorCode = mockResponse.errorCode;
+      }
 
       console.log('[PG Service] Card payment result:', {
         success: pgResponse.success,
@@ -87,13 +91,13 @@ export class PGService {
     const pgResponse: IPGResponse = {
       success: true,
       transactionId: `CASH_${uuidv4()}`,
-      approvalNumber: `CSH_${Date.now()}`,
       message: 'Cash payment completed',
       rawResponse: {
         method: 'cash',
         timestamp: new Date(),
       },
     };
+    pgResponse.approvalNumber = `CSH_${Date.now()}`;
 
     console.log('[PG Service] Cash payment completed:', pgResponse.transactionId);
     return pgResponse;
@@ -113,15 +117,19 @@ export class PGService {
       const pgResponse: IPGResponse = {
         success: isSuccess,
         transactionId: `MOBILE_${uuidv4()}`,
-        approvalNumber: isSuccess ? `MOB_${Date.now()}` : undefined,
         message: isSuccess ? 'Mobile payment completed' : 'Mobile payment failed - timeout',
-        errorCode: isSuccess ? undefined : 'MOBILE_TIMEOUT',
         rawResponse: {
           method: 'mobile',
           provider: 'KakaoPay',
           timestamp: new Date(),
         },
       };
+
+      if (isSuccess) {
+        pgResponse.approvalNumber = `MOB_${Date.now()}`;
+      } else {
+        pgResponse.errorCode = 'MOBILE_TIMEOUT';
+      }
 
       console.log('[PG Service] Mobile payment result:', {
         success: pgResponse.success,
@@ -160,9 +168,7 @@ export class PGService {
       const pgResponse: IPGResponse = {
         success: isSuccess,
         transactionId: refundTransactionId,
-        approvalNumber: isSuccess ? `REF_${Date.now()}` : undefined,
         message: isSuccess ? 'Refund processed successfully' : 'Refund failed - insufficient balance',
-        errorCode: isSuccess ? undefined : 'INSUFFICIENT_BALANCE',
         rawResponse: {
           originalTransactionId: transactionId,
           refundAmount: amount,
@@ -170,6 +176,12 @@ export class PGService {
           timestamp: new Date(),
         },
       };
+
+      if (isSuccess) {
+        pgResponse.approvalNumber = `REF_${Date.now()}`;
+      } else {
+        pgResponse.errorCode = 'INSUFFICIENT_BALANCE';
+      }
 
       console.log('[PG Service] Refund result:', {
         success: pgResponse.success,

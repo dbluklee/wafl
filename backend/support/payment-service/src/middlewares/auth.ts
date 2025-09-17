@@ -38,8 +38,11 @@ export const authenticateToken = (
       userId: decoded.userId,
       storeId: decoded.storeId,
       role: decoded.role,
-      email: decoded.email,
     };
+
+    if (decoded.email) {
+      req.user.email = decoded.email;
+    }
 
     next();
   } catch (error) {

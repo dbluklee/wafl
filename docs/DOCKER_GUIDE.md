@@ -78,7 +78,7 @@ RUN npm ci --only=production
 COPY --from=builder /app/dist ./dist
 HEALTHCHECK --interval=30s --timeout=3s \
   CMD node healthcheck.js
-EXPOSE 3001
+EXPOSE 4001
 CMD ["node", "dist/index.js"]
 ```
 
@@ -122,9 +122,9 @@ SMS_API_KEY=...
 PG_API_KEY=...
 
 # Service URLs (Docker 내부 통신)
-AUTH_SERVICE_URL=http://auth-service:3001
-STORE_SERVICE_URL=http://store-management-service:3002
-AI_SERVICE_URL=http://ai-service:3006
+AUTH_SERVICE_URL=http://auth-service:4001
+STORE_SERVICE_URL=http://store-management-service:4002
+AI_SERVICE_URL=http://ai-service:4006
 ```
 
 ## 서비스 간 의존성 관리
@@ -140,7 +140,7 @@ auth-service:
     rabbitmq:
       condition: service_healthy
   healthcheck:
-    test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
+    test: ["CMD", "curl", "-f", "http://localhost:4001/health"]
     interval: 30s
     timeout: 10s
     retries: 3
@@ -220,7 +220,7 @@ docker-compose logs -f auth-service
 ```bash
 # 서비스 간 통신 테스트
 docker-compose exec auth-service ping store-management-service
-docker-compose exec auth-service curl http://store-management-service:3002/health
+docker-compose exec auth-service curl http://store-management-service:4002/health
 ```
 
 ### 4. 볼륨 관리
@@ -270,7 +270,7 @@ docker-compose up -d --scale order-service=3
 ```bash
 # 사용 중인 포트 확인
 netstat -tulpn | grep LISTEN
-lsof -i :3001
+lsof -i :4001
 ```
 
 ### 메모리 부족

@@ -1,12 +1,11 @@
 import { v4 as uuidv4 } from 'uuid';
-import axios from 'axios';
+// import axios from 'axios'; // TODO: 향후 외부 API 호출에 사용
 import config from '@/config';
 import { paymentCache } from '@/utils/cache';
 import { pgService } from './pg.service';
 import {
   IPaymentRequest,
   IPaymentResponse,
-  TPaymentMethod,
   TPaymentStatus,
   PaymentServiceError,
   IPGResponse,
@@ -66,7 +65,7 @@ export class PaymentService {
     }
   }
 
-  async getPayment(paymentId: string, storeId: string): Promise<IPaymentResponse> {
+  async getPayment(paymentId: string, _storeId: string): Promise<IPaymentResponse> {
     console.log('[Payment Service] Getting payment:', paymentId);
 
     const cached = paymentCache.getPayment(paymentId);
@@ -103,9 +102,17 @@ export class PaymentService {
     const updatedPayment: IPaymentResponse = {
       ...payment,
       status,
-      pgResponse,
-      completedAt: status === 'completed' ? new Date() : payment.completedAt,
     };
+
+    if (status === 'completed') {
+      updatedPayment.completedAt = new Date();
+    } else if (payment.completedAt) {
+      updatedPayment.completedAt = payment.completedAt;
+    }
+
+    if (pgResponse) {
+      updatedPayment.pgResponse = pgResponse;
+    }
 
     if (pgResponse?.transactionId) {
       updatedPayment.transactionId = pgResponse.transactionId;
@@ -133,7 +140,7 @@ export class PaymentService {
     return this.updatePaymentStatus(paymentId, 'cancelled', storeId);
   }
 
-  async getPaymentsByOrder(orderId: string, storeId: string): Promise<IPaymentResponse[]> {
+  async getPaymentsByOrder(orderId: string, _storeId: string): Promise<IPaymentResponse[]> {
     console.log('[Payment Service] Getting payments for order:', orderId);
 
     const payments = Array.from(mockPayments.values())

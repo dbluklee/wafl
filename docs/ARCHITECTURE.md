@@ -21,27 +21,27 @@ services:
   - rabbitmq:5672/15672
 
   # Backend Services (16)
-  - api-gateway:8080        # ✅ 완전 구현됨 (중앙 라우팅 허브)
-  - auth-service:3001       # ✅ 완전 구현됨 (인증/권한 관리)
-  - store-management-service:3002  # 📈 다음 우선 구현 대상
-  - dashboard-service:3003         # ⚠️ 구현 대기
-  - order-service:3004             # ⚠️ 구현 대기
-  - payment-service:3005
-  - ai-service:3006
-  - analytics-service:3007
-  - notification-service:3008
-  - user-profile-service:3009
-  - history-service:3010
-  - scraping-service:3011
-  - qr-service:3012
-  - inventory-service:3013
-  - delivery-service:3014
-  - hardware-service:3015
+  - api-gateway:4000        # ✅ 완전 구현됨 (중앙 라우팅 허브)
+  - auth-service:4001       # ✅ 완전 구현됨 (인증/권한 관리)
+  - store-management-service:4002  # 📈 다음 우선 구현 대상
+  - dashboard-service:4003         # ⚠️ 구현 대기
+  - order-service:4004             # ⚠️ 구현 대기
+  - payment-service:4005
+  - ai-service:4006
+  - analytics-service:4007
+  - notification-service:4008
+  - user-profile-service:4009
+  - history-service:4010
+  - scraping-service:4011
+  - qr-service:4012
+  - inventory-service:4013
+  - delivery-service:4014
+  - hardware-service:4015
 
   # Frontend Services (3)
-  - pos-admin-web:4000
-  - qr-order-web:4001
-  - kitchen-display-web:4002
+  - pos-admin-web:5000
+  - qr-order-web:5001
+  - kitchen-display-web:5002
 
   # Reverse Proxy (1)
   - nginx:80/443
@@ -50,7 +50,7 @@ services:
 ### 서비스 간 통신
 ```javascript
 // 1. HTTP REST API (동기)
-const authServiceUrl = 'http://auth-service:3001';
+const authServiceUrl = 'http://auth-service:4001';
 const response = await axios.get(`${authServiceUrl}/api/v1/users`);
 
 // 2. RabbitMQ (비동기)

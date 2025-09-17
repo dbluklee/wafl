@@ -103,7 +103,7 @@ enum EUserRole { OWNER = 'owner' }
 ### 포트 충돌 문제 해결
 - **문제**: 개발 환경에서 포트 충돌 빈발
 - **해결**: 표준 포트 할당 + 프로세스 정리 스크립트
-- **포트 맵**: 3001(Auth), 3002(Store), 3003(Dashboard), 3004(Order), 3005(Payment), 3006(Profile), 8080(Gateway)
+- **포트 맵**: 4001(Auth), 4002(Store), 4003(Dashboard), 4004(Order), 4005(Payment), 4009(Profile), 4000(Gateway)
 
 ### TypeScript 컴파일 최적화
 - **Strict Mode**: 엄격한 타입 검사 활성화

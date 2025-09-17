@@ -1,6 +1,6 @@
 # Notification Service API 명세서
 
-**포트**: 3008
+**포트**: 4008
 **상태**: ⚠️ 계획 중
 **목적**: 실시간 알림, WebSocket 관리, 푸시 알림
 
@@ -36,7 +36,7 @@ GET /health
 
 ### 1. WebSocket 연결
 ```javascript
-const ws = new WebSocket('ws://localhost:3008/ws');
+const ws = new WebSocket('ws://localhost:4008/ws');
 
 ws.onopen = () => {
   ws.send(JSON.stringify({

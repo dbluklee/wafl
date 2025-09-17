@@ -1,7 +1,7 @@
 # Auth Service API Documentation
 
 **서비스 위치**: `backend/core/auth-service/`
-**포트**: 3001
+**포트**: 4001
 **상태**: ✅ 완전 구현 완료 (2025.09.16)
 
 ## 📋 개요
@@ -20,7 +20,7 @@ Auth Service는 WAFL AI POS 시스템의 핵심 인증 서비스로, JWT 기반�
 
 ### 기본 정보
 ```
-Base URL: http://localhost:3001
+Base URL: http://localhost:4001
 Content-Type: application/json
 ```
 
@@ -328,12 +328,12 @@ QR_TABLE_01, QR_TABLE_02, QR_TABLE_03
 
 ### 1. 헬스체크
 ```bash
-curl http://localhost:3001/health
+curl http://localhost:4001/health
 ```
 
 ### 2. PIN 로그인
 ```bash
-curl -X POST http://localhost:3001/api/v1/auth/login/pin \
+curl -X POST http://localhost:4001/api/v1/auth/login/pin \
   -H "Content-Type: application/json" \
   -d '{
     "storeCode": 1001,
@@ -343,7 +343,7 @@ curl -X POST http://localhost:3001/api/v1/auth/login/pin \
 
 ### 3. SMS 인증번호 요청
 ```bash
-curl -X POST http://localhost:3001/api/v1/auth/mobile/request \
+curl -X POST http://localhost:4001/api/v1/auth/mobile/request \
   -H "Content-Type: application/json" \
   -d '{
     "phone": "01012345678"
@@ -352,7 +352,7 @@ curl -X POST http://localhost:3001/api/v1/auth/mobile/request \
 
 ### 4. 고객 세션 생성
 ```bash
-curl -X POST http://localhost:3001/api/v1/auth/customer/session \
+curl -X POST http://localhost:4001/api/v1/auth/customer/session \
   -H "Content-Type: application/json" \
   -d '{
     "qrCode": "QR_TABLE_01",
@@ -362,7 +362,7 @@ curl -X POST http://localhost:3001/api/v1/auth/customer/session \
 
 ### 5. 로그아웃 (토큰 필요)
 ```bash
-curl -X POST http://localhost:3001/api/v1/auth/logout \
+curl -X POST http://localhost:4001/api/v1/auth/logout \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer YOUR_ACCESS_TOKEN"
 ```
@@ -419,7 +419,7 @@ npm start
 ### Docker 실행
 ```bash
 docker build -t auth-service .
-docker run -p 3001:3001 auth-service
+docker run -p 4001:4001 auth-service
 ```
 
 ---

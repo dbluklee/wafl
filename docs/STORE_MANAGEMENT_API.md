@@ -4,8 +4,8 @@
 Store Management Service는 매장의 카테고리, 메뉴, 장소, 테이블을 관리하는 핵심 비즈니스 서비스입니다.
 
 ## 기본 정보
-- **포트**: 3002
-- **Base URL**: `http://localhost:3002`
+- **포트**: 4002
+- **Base URL**: `http://localhost:4002`
 - **API 버전**: v1
 - **인증**: JWT Bearer Token (Auth Service와 동일한 secret 사용)
 
@@ -13,7 +13,7 @@ Store Management Service는 매장의 카테고리, 메뉴, 장소, 테이블을
 
 ### JWT 토큰 발급 (Auth Service)
 ```bash
-curl -X POST http://localhost:3001/api/v1/auth/login/pin \
+curl -X POST http://localhost:4001/api/v1/auth/login/pin \
   -H "Content-Type: application/json" \
   -d '{"storeCode":1001,"userPin":"1234"}'
 ```
@@ -21,7 +21,7 @@ curl -X POST http://localhost:3001/api/v1/auth/login/pin \
 ### API 호출 시 토큰 사용
 ```bash
 curl -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
-  http://localhost:3002/api/v1/store/categories
+  http://localhost:4002/api/v1/store/categories
 ```
 
 ## API 엔드포인트
@@ -490,14 +490,14 @@ DELETE /api/v1/store/tables/:id
 ### 환경 변수 (.env)
 ```
 NODE_ENV=development
-PORT=3002
+PORT=4002
 SERVICE_NAME=store-management-service
 
 DATABASE_URL=postgresql://postgres:password@localhost:5432/aipos?schema=public
 
 CACHE_TTL=3600
 
-AUTH_SERVICE_URL=http://localhost:3001
+AUTH_SERVICE_URL=http://localhost:4001
 JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
 
 UPLOAD_DIR=./uploads
@@ -513,23 +513,23 @@ RATE_LIMIT_MAX_REQUESTS=100
 ### 개발 서버 실행
 ```bash
 cd backend/core/store-management-service
-npm run dev  # 포트 3002에서 실행
+npm run dev  # 포트 4002에서 실행
 ```
 
 ### 테스트
 ```bash
 # 헬스체크
-curl http://localhost:3002/health
+curl http://localhost:4002/health
 
 # JWT 토큰 발급
-TOKEN=$(curl -s -X POST http://localhost:3001/api/v1/auth/login/pin \
+TOKEN=$(curl -s -X POST http://localhost:4001/api/v1/auth/login/pin \
   -H "Content-Type: application/json" \
   -d '{"storeCode":1001,"userPin":"1234"}' | \
   jq -r '.data.accessToken')
 
 # API 테스트
 curl -H "Authorization: Bearer $TOKEN" \
-  http://localhost:3002/api/v1/store/categories
+  http://localhost:4002/api/v1/store/categories
 ```
 
 ## 최종 업데이트

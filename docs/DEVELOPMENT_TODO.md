@@ -34,7 +34,7 @@
   - [x] 연결 테스트 및 검증 완료
 
 ### 🎉 Phase 2: Auth Service 완전 구현 (100% 완료) ✅ NEW!
-**위치**: `backend/core/auth-service/` (포트 3001)
+**위치**: `backend/core/auth-service/` (포트 4001)
 **완료일**: 2025.09.16
 **테스트 상태**: 모든 API 엔드포인트 동작 확인 완료
 
@@ -43,7 +43,7 @@
   - [x] 필수 dependencies 설치 (express, jsonwebtoken, bcrypt, redis, etc.)
   - [x] TypeScript 설정 (tsconfig.json, 타입 정의)
   - [x] 공유 모듈 연결 (@shared/database, @shared/types)
-  - [x] 기본 Express 서버 설정 (포트 3001)
+  - [x] 기본 Express 서버 설정 (포트 4001)
   - [x] Dockerfile 작성 (멀티스테이지 빌드)
 
 - [x] **Core 인증 시스템** ✅ 완료
@@ -84,7 +84,7 @@
 ## 🎯 다음 단계 작업들 (Phase 2 계속: 비즈니스 로직 구현)
 
 ### 🎉 최우선 작업: API Gateway Service 구현 **[진행률: 100%]** ✅ COMPLETED!
-**위치**: `backend/support/api-gateway/` (포트 8080 - 메인 엔트리 포인트)
+**위치**: `backend/support/api-gateway/` (포트 4000 - 메인 엔트리 포인트)
 **현재 상태**: 완전 구현 및 실행 중
 **의존성**: Auth Service 완료 ✅
 **완료일**: 2025.09.16
@@ -98,7 +98,7 @@
 
 - [x] **중앙 라우팅 허브 구현** ✅ 완료
   - [x] Auth Service 연동 미들웨어 (JWT 검증)
-  - [x] 12개 서비스 프록시 라우팅 (auth:3001, store:3002, order:3004 등)
+  - [x] 12개 서비스 프록시 라우팅 (auth:4001, store:4002, order:4004 등)
   - [x] JWT 토큰 검증 미들웨어
   - [x] 역할 기반 접근 제어 (owner/staff/customer)
   - [x] 서비스별 라우트 설정 및 권한 관리
@@ -118,15 +118,15 @@
   - [x] 타임아웃 처리 및 서킷 브레이커 패턴
 
 **🎯 테스트 검증 완료 상태**:
-- ✅ 서버 실행 확인 (포트 8080)
+- ✅ 서버 실행 확인 (포트 4000)
 - ✅ Health Check API: `/api/v1/gateway/health`
 - ✅ 서비스 목록 API: `/api/v1/gateway/services`
 - ✅ 메트릭 API: `/api/v1/gateway/metrics`
-- ✅ Auth Service 연동 확인 (3001 포트)
+- ✅ Auth Service 연동 확인 (4001 포트)
 - ✅ 프록시 라우팅 테스트 완료
 
 ### 📈 새로운 최우선 작업: Store Management Service 구현 **[진행률: 0%]**
-**위치**: `backend/core/store-management-service/` (포트 3002)
+**위치**: `backend/core/store-management-service/` (포트 4002)
 **현재 상태**: 빈 디렉토리
 **의존성**: Auth Service ✅, API Gateway ✅
 
@@ -139,7 +139,7 @@
   - [ ] 테스트 코드 작성
 
 ### 📊 두 번째 우선순위: Order Service 구현 **[진행률: 0%]**
-**위치**: `backend/core/order-service/` (포트 3004)
+**위치**: `backend/core/order-service/` (포트 4004)
 **현재 상태**: 빈 디렉토리
 **의존성**: Auth Service ✅, API Gateway ✅, Store Management Service 권장
 
@@ -151,7 +151,7 @@
   - [ ] 실시간 주문 알림 준비
 
 ### 🎨 세 번째 우선순위: Dashboard Service 구현 **[진행률: 0%]**
-**위치**: `backend/core/dashboard-service/` (포트 3003)
+**위치**: `backend/core/dashboard-service/` (포트 4003)
 **현재 상태**: 빈 디렉토리
 **의존성**: Auth Service ✅, API Gateway ✅, Order Service 권장
 
@@ -177,31 +177,31 @@
 ## ⏳ 후속 개발 단계 (Phase 3+)
 
 ### 주요 Support Services
-- [ ] **Payment Service (포트 3005)**
+- [ ] **Payment Service (포트 4005)**
   - [ ] PG 연동 및 결제 처리
   - [ ] 영수증 발행 시스템
   - [ ] 환불 처리
 
-- [ ] **AI Service (포트 3006)**
+- [ ] **AI Service (포트 4006)**
   - [ ] OpenAI API 연동
   - [ ] 점주 AI Agent
   - [ ] 메뉴 추천 시스템
 
-- [ ] **Analytics Service (포트 3007)**
+- [ ] **Analytics Service (포트 4007)**
   - [ ] 매출 분석 대시보드
   - [ ] 트렌드 분석
   - [ ] 리포트 생성
 
-- [ ] **Notification Service (포트 3008)**
+- [ ] **Notification Service (포트 4008)**
   - [ ] WebSocket 서버
   - [ ] 실시간 알림 시스템
   - [ ] 이벤트 브로드캐스트
 
 ### 기타 Support Services
-- [ ] **User Profile Service (포트 3009)** - 직원 관리
-- [ ] **History Service (포트 3010)** - 작업 로그 및 Undo/Redo
-- [ ] **Scraping Service (포트 3011)** - 네이버 플레이스 연동
-- [ ] **QR Service (포트 3012)** - QR 코드 생성/관리
+- [ ] **User Profile Service (포트 4009)** - 직원 관리
+- [ ] **History Service (포트 4010)** - 작업 로그 및 Undo/Redo
+- [ ] **Scraping Service (포트 4011)** - 네이버 플레이스 연동
+- [ ] **QR Service (포트 4012)** - QR 코드 생성/관리
 - [ ] **Inventory Service (포트 3013)** - 재고 관리
 - [ ] **Delivery Service (포트 3014)** - 배달앱 연동
 - [ ] **Hardware Service (포트 3015)** - POS 하드웨어 제어
@@ -241,10 +241,10 @@ DATABASE_URL="postgresql://postgres:Cl!Wm@Dp!Dl@Em!@localhost:5432/aipos?schema=
 cd backend/core/auth-service && npm run dev
 
 # 2. 헬스체크
-curl http://localhost:3001/health
+curl http://localhost:4001/health
 
 # 3. PIN 로그인 테스트
-curl -X POST http://localhost:3001/api/v1/auth/login/pin \
+curl -X POST http://localhost:4001/api/v1/auth/login/pin \
   -H "Content-Type: application/json" \
   -d '{"storeCode": 1001, "userPin": "1234"}'
 ```

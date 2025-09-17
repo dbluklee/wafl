@@ -4,7 +4,7 @@
 
 **WAFL API Gateway**는 마이크로서비스 아키텍처의 중앙 허브로, 모든 클라이언트 요청을 적절한 백엔드 서비스로 라우팅하는 핵심 컴포넌트입니다.
 
-- **포트**: 8080 (메인 엔트리 포인트)
+- **포트**: 4000 (메인 엔트리 포인트)
 - **위치**: `backend/support/api-gateway/`
 - **상태**: ✅ 완전 구현 및 실행 중
 - **완료일**: 2025.09.16
@@ -43,18 +43,18 @@ api-gateway/
 
 | 서비스 | 경로 | 포트 | 권한 | 설명 |
 |--------|------|------|------|------|
-| Auth Service | `/api/v1/auth` | 3001 | Public | 인증 및 권한 관리 |
-| Store Management | `/api/v1/store` | 3002 | Owner/Staff | 매장/메뉴 관리 |
-| Dashboard Service | `/api/v1/dashboard` | 3003 | Owner/Staff | 실시간 대시보드 |
-| Order Service | `/api/v1/orders` | 3004 | All | 주문 처리 |
-| Payment Service | `/api/v1/payments` | 3005 | All | 결제 처리 |
-| AI Service | `/api/v1/ai` | 3006 | All | AI Agent |
-| Analytics Service | `/api/v1/analytics` | 3007 | Owner/Staff | 매출 분석 |
-| Notification Service | `/api/v1/notifications` | 3008 | All | 알림 관리 |
-| User Profile Service | `/api/v1/profile` | 3009 | Owner/Staff | 직원 관리 |
-| History Service | `/api/v1/history` | 3010 | Owner/Staff | 작업 로그 |
-| Scraping Service | `/api/v1/scraping` | 3011 | Owner | 데이터 수집 |
-| QR Service | `/api/v1/qr` | 3012 | Owner/Staff | QR 코드 관리 |
+| Auth Service | `/api/v1/auth` | 4001 | Public | 인증 및 권한 관리 |
+| Store Management | `/api/v1/store` | 4002 | Owner/Staff | 매장/메뉴 관리 |
+| Dashboard Service | `/api/v1/dashboard` | 4003 | Owner/Staff | 실시간 대시보드 |
+| Order Service | `/api/v1/orders` | 4004 | All | 주문 처리 |
+| Payment Service | `/api/v1/payments` | 4005 | All | 결제 처리 |
+| AI Service | `/api/v1/ai` | 4006 | All | AI Agent |
+| Analytics Service | `/api/v1/analytics` | 4007 | Owner/Staff | 매출 분석 |
+| Notification Service | `/api/v1/notifications` | 4008 | All | 알림 관리 |
+| User Profile Service | `/api/v1/profile` | 4009 | Owner/Staff | 직원 관리 |
+| History Service | `/api/v1/history` | 4010 | Owner/Staff | 작업 로그 |
+| Scraping Service | `/api/v1/scraping` | 4011 | Owner | 데이터 수집 |
+| QR Service | `/api/v1/qr` | 4012 | Owner/Staff | QR 코드 관리 |
 
 ### 2. 인증 및 권한 관리
 - **JWT 토큰 검증**: Auth Service와 연동
@@ -109,7 +109,7 @@ cd /home/wk/projects/wafl/backend/support/api-gateway
 # 의존성 설치
 npm install
 
-# 개발 서버 시작 (포트 8080)
+# 개발 서버 시작 (포트 4000)
 npm run dev
 
 # TypeScript 컴파일
@@ -123,28 +123,28 @@ npm start
 
 ```bash
 # 기본 헬스체크
-curl http://localhost:8080/health
+curl http://localhost:4000/health
 
 # 전체 서비스 상태
-curl http://localhost:8080/api/v1/gateway/health
+curl http://localhost:4000/api/v1/gateway/health
 
 # 서비스 목록
-curl http://localhost:8080/api/v1/gateway/services
+curl http://localhost:4000/api/v1/gateway/services
 
 # 메트릭 정보
-curl http://localhost:8080/api/v1/gateway/metrics
+curl http://localhost:4000/api/v1/gateway/metrics
 ```
 
 ### Auth Service 연동 테스트
 
 ```bash
 # Auth Service를 통한 PIN 로그인 (API Gateway 경유)
-curl -X POST http://localhost:8080/api/v1/auth/login/pin \
+curl -X POST http://localhost:4000/api/v1/auth/login/pin \
   -H "Content-Type: application/json" \
   -d '{"storeCode": 1001, "userPin": "1234"}'
 
 # JWT 토큰으로 인증된 요청 (향후 다른 서비스들)
-curl -X GET http://localhost:8080/api/v1/store/categories \
+curl -X GET http://localhost:4000/api/v1/store/categories \
   -H "Authorization: Bearer YOUR_JWT_TOKEN"
 ```
 
@@ -164,7 +164,7 @@ curl -X GET http://localhost:8080/api/v1/store/categories \
 - [x] Docker 컨테이너 설정
 
 ### 🔍 테스트 검증 완료
-- [x] 서버 실행 확인 (포트 8080)
+- [x] 서버 실행 확인 (포트 4000)
 - [x] Health Check API 동작 확인
 - [x] Auth Service 연동 확인
 - [x] 프록시 라우팅 테스트
@@ -177,7 +177,7 @@ curl -X GET http://localhost:8080/api/v1/store/categories \
 ```bash
 # API Gateway 설정
 NODE_ENV=development
-PORT=8080
+PORT=4000
 API_VERSION=v1
 
 # JWT 설정 (Auth Service와 동일)
@@ -190,24 +190,24 @@ RATE_LIMIT_WINDOW_MS=900000
 RATE_LIMIT_MAX_REQUESTS=100
 
 # CORS 설정
-CORS_ORIGIN=http://localhost:8080,http://localhost:3001,http://localhost:3002
+CORS_ORIGIN=http://localhost:4000,http://localhost:4001,http://localhost:4002
 
 # 12개 서비스 URL 설정
-AUTH_SERVICE_URL=http://localhost:3001
-STORE_MANAGEMENT_SERVICE_URL=http://localhost:3002
-DASHBOARD_SERVICE_URL=http://localhost:3003
-ORDER_SERVICE_URL=http://localhost:3004
-PAYMENT_SERVICE_URL=http://localhost:3005
-AI_SERVICE_URL=http://localhost:3006
-ANALYTICS_SERVICE_URL=http://localhost:3007
-NOTIFICATION_SERVICE_URL=http://localhost:3008
-USER_PROFILE_SERVICE_URL=http://localhost:3009
-HISTORY_SERVICE_URL=http://localhost:3010
-SCRAPING_SERVICE_URL=http://localhost:3011
-QR_SERVICE_URL=http://localhost:3012
+AUTH_SERVICE_URL=http://localhost:4001
+STORE_MANAGEMENT_SERVICE_URL=http://localhost:4002
+DASHBOARD_SERVICE_URL=http://localhost:4003
+ORDER_SERVICE_URL=http://localhost:4004
+PAYMENT_SERVICE_URL=http://localhost:4005
+AI_SERVICE_URL=http://localhost:4006
+ANALYTICS_SERVICE_URL=http://localhost:4007
+NOTIFICATION_SERVICE_URL=http://localhost:4008
+USER_PROFILE_SERVICE_URL=http://localhost:4009
+HISTORY_SERVICE_URL=http://localhost:4010
+SCRAPING_SERVICE_URL=http://localhost:4011
+QR_SERVICE_URL=http://localhost:4012
 
 # WebSocket 설정
-WS_PORT=8080
+WS_PORT=4000
 WS_PATH=/ws
 
 # Health Check

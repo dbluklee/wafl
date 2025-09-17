@@ -56,6 +56,9 @@ export class PaymentController {
       }
 
       const paymentId = req.params.id;
+      if (!paymentId) {
+        throw new PaymentServiceError('Payment ID is required', 400, 'PAYMENT_ID_REQUIRED');
+      }
       const payment = await paymentService.getPayment(paymentId, storeId);
 
       res.status(200).json({
@@ -79,6 +82,9 @@ export class PaymentController {
       }
 
       const paymentId = req.params.id;
+      if (!paymentId) {
+        throw new PaymentServiceError('Payment ID is required', 400, 'PAYMENT_ID_REQUIRED');
+      }
       const { status } = req.body;
 
       const payment = await paymentService.updatePaymentStatus(paymentId, status, storeId);
@@ -104,6 +110,9 @@ export class PaymentController {
       }
 
       const paymentId = req.params.id;
+      if (!paymentId) {
+        throw new PaymentServiceError('Payment ID is required', 400, 'PAYMENT_ID_REQUIRED');
+      }
       const payment = await paymentService.cancelPayment(paymentId, storeId);
 
       res.status(200).json({
@@ -147,6 +156,9 @@ export class PaymentController {
       }
 
       const orderId = req.params.orderId;
+      if (!orderId) {
+        throw new PaymentServiceError('Order ID is required', 400, 'ORDER_ID_REQUIRED');
+      }
       const payments = await paymentService.getPaymentsByOrder(orderId, storeId);
 
       res.status(200).json({

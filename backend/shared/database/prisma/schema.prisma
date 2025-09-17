@@ -112,6 +112,7 @@ model User {
   // Relations
   store           Store            @relation(fields: [storeId], references: [id], onDelete: Cascade)
   historyLogs     HistoryLog[]
+  undoStacks      UndoStack[]
   aiConversations AiConversation[]
 
   @@unique([storeId, userPin])
@@ -299,20 +300,41 @@ model HistoryLog {
   action      String    @db.VarChar(50) // 'create', 'update', 'delete'
   entityType  String    @map("entity_type") @db.VarChar(50) // 'menu', 'table', 'category'
   entityId    String    @map("entity_id")
+  entityName  String?   @map("entity_name") @db.VarChar(200) // 엔티티 이름 (표시용)
   oldData     Json?     @map("old_data") // 이전 상태
   newData     Json?     @map("new_data") // 새로운 상태
+  metadata    Json?     // IP, userAgent, reason 등 메타데이터
   isUndoable  Boolean   @default(true) @map("is_undoable")
+  undoDeadline DateTime? @map("undo_deadline") // Undo 가능한 기한
+  undoneAt    DateTime? @map("undone_at") // Undo 실행 시간
   createdAt   DateTime  @default(now()) @map("created_at")
-  undoAt      DateTime? @map("undo_at")
 
   // Relations
   user  User  @relation(fields: [userId], references: [id])
   store Store @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  undoStacks UndoStack[] // Undo 스택과의 관계
 
   @@index([storeId])
   @@index([userId])
   @@index([entityType, entityId])
+  @@index([storeId, createdAt])
   @@map("history_logs")
+}
+
+model UndoStack {
+  id          String   @id @default(uuid())
+  historyLogId String  @map("history_log_id")
+  userId      String   @map("user_id")
+  redoneAt    DateTime? @map("redone_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  // Relations
+  historyLog  HistoryLog @relation(fields: [historyLogId], references: [id], onDelete: Cascade)
+  user        User       @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([historyLogId])
+  @@map("undo_stack")
 }
 
 model AiConversation {
