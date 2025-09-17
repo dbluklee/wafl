@@ -17,7 +17,7 @@ export class AuthService {
   // PIN 로그인
   async loginWithPin(data: IPinLoginRequest): Promise<IAuthResponse> {
     const store = await prisma.store.findUnique({
-      where: { storeCode: data.storeCode }
+      where: { storeCode: parseInt(data.storeCode) }
     });
 
     if (!store) {
@@ -34,6 +34,16 @@ export class AuthService {
 
     if (!user) {
       throw new Error('잘못된 PIN 번호입니다.');
+    }
+
+    // Password 검증 (password가 제공된 경우)
+    if (data.password && user.password) {
+      const isPasswordValid = await bcrypt.compare(data.password, user.password);
+      if (!isPasswordValid) {
+        throw new Error('잘못된 비밀번호입니다.');
+      }
+    } else if (data.password && !user.password) {
+      throw new Error('해당 사용자는 비밀번호 로그인을 지원하지 않습니다.');
     }
 
     // JWT 토큰 생성

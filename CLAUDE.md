@@ -6,7 +6,16 @@
 **WAFL** - AI POS System (AI Agent 기반 차세대 외식업 주문결제 시스템)
 
 ## 현재 상태 (Current State)
-**🎉 AI Service 완전 구현 완료! (Phase 2-9 완료, 핵심 서비스 8/8 완료)**
+**🎉 POS Admin Web 홈페이지 완전 구현 완료! (Phase 3-2 완료, 서비스 연결 및 인터랙션 구현 완료)**
+
+### 🚨 **최신 완료 사항 (2025.09.17 - Phase 3-2)**
+- ✅ **홈페이지 3x3 그리드 레이아웃 완성**: TailwindCSS v4 업그레이드로 flex 레이아웃 문제 해결
+- ✅ **React Router 라우팅 시스템 구축**: 4개 메인 페이지 라우팅 (/dashboard, /management, /ai-agent, /analytics)
+- ✅ **인터랙티브 UI 구현**: 모든 블록 클릭 시 해당 서비스 페이지로 네비게이션
+- ✅ **유저 인포 카드 뒤집기 기능**: 터치 시 CSS 3D 애니메이션으로 매장정보/사용자명 표시
+- ✅ **인증 시스템 완전 연동**: Zustand 스토어와 실시간 사용자 정보 연동
+- ✅ **로그아웃 기능**: 완전한 상태 초기화 및 토큰 정리
+- ✅ **TailwindCSS v4 마이그레이션**: 원본 디자인과 100% 동일한 레이아웃 구현
 
 ### 🎯 완료된 핵심 서비스들
 - ✅ **Auth Service** (포트 4001) - JWT 인증, PIN/SMS 로그인, 8개 API
@@ -18,6 +27,11 @@
 - ✅ **User Profile Service** (포트 4009) - 프로필/직원 관리, 8개 API
 - ✅ **History Service** (포트 4010) - 이력 추적, Undo/Redo, 8개 API
 - ✅ **API Gateway** (포트 4000) - 중앙 라우팅, 12개 서비스 프록시
+
+### 🎯 프론트엔드 개발 현황
+- ✅ **POS Admin Web** (포트 4100) - 점주/직원용 관리 인터페이스 (**2025.09.17 홈페이지 완전 구현 완료**)
+- ⏳ **Kitchen Display Web** (포트 4200) - 주방용 실시간 화면 (대기)
+- ⏳ **Customer Mobile App** (포트 4300) - 고객용 모바일 앱 (대기)
 
 ### 📋 AI Service 상세 정보 (최신 구현)
 **목적**: Ollama 기반 점주 경영 컨설팅, 고객 대화, 메뉴 추천, 다국어 번역 핵심 서비스
@@ -188,7 +202,10 @@ wafl/
 │   │   ├── payment-service/     # ✅ 완전 구현 (포트 4005)
 │   │   └── [8개 서비스 대기]    # ⚠️ 구현 대기
 │   └── shared/                  # ✅ 완전 구현
-├── frontend/                    # ⚠️ 구현 대기 (3개 웹앱)
+├── frontend/                    # 🚧 프론트엔드 구현 중
+│   ├── pos-admin-web/          # 🚧 점주/직원용 관리 인터페이스 (포트 4100)
+│   ├── kitchen-display-web/    # ⏳ 주방용 실시간 화면 (포트 4200)
+│   └── qr-order-web/          # ⏳ 고객용 모바일 앱 (포트 4300)
 ├── docs/                        # 📚 상세 문서들
 └── [설정 파일들]               # ✅ 완료
 ```
@@ -343,7 +360,191 @@ backend/core/history-service/
 - ✅ Payment Service TypeScript 컴파일 성공
 - ✅ 133개 포트 레퍼런스 완전 동기화
 
-### 🔄 개발 결정사항 및 변경 로그
+### 📋 POS Admin Web 상세 정보 (완전 해결)
+**목적**: 점주와 직원이 사용하는 메인 관리 인터페이스 웹 애플리케이션
+**포트**: 4100 (완전 구현)
+**개발 완료일**: 2025.09.17
+
+**핵심 기능**:
+1. **PIN 로그인 시스템** - 매장코드 + PIN 기반 인증 ✅
+2. **실시간 대시보드** - 테이블 상태, 주문 현황, POS 로그
+3. **매장 관리** - 카테고리/메뉴/장소/테이블 CRUD, QR 코드 생성
+4. **AI 경영 상담** - SSE 스트리밍 기반 실시간 AI 채팅
+5. **매출 분석** - Recharts 기반 시각화, AI 제안 시스템
+6. **WebSocket 실시간 통신** - 테이블/주문/결제 상태 실시간 업데이트
+
+**기술 스택**:
+- **React 18 + TypeScript** (엄격 모드)
+- **Vite + TailwindCSS** - 빠른 개발, 다크 테마 기본
+- **Zustand + Persist** - 상태 관리 + 로컬 저장소 연동
+- **React Query** - 서버 상태 관리 및 캐싱
+- **Socket.io Client** - 실시간 WebSocket 통신
+- **Recharts** - 매출 분석 차트
+- **React Hook Form + Zod** - 폼 관리 및 검증
+
+**✅ 완전 해결된 기능들 (2025.09.17 - Phase 3-2 완료)**:
+
+**🏗️ 기반 구조**:
+- ✅ **프로젝트 초기 설정**: Vite + React + TypeScript + TailwindCSS v4
+- ✅ **완전한 타입 시스템**: 전체 API 타입 정의, 컴포넌트 Props 타입
+- ✅ **API 클라이언트**: Axios + 인터셉터, 토큰 자동 갱신, 에러 핸들링
+- ✅ **상태 관리**: Zustand + Persist 인증 스토어 (로그인/로그아웃/토큰 관리)
+- ✅ **WebSocket 훅**: 실시간 이벤트 수신, 자동 재연결
+- ✅ **유틸리티 함수**: 통화 포맷, 날짜 포맷, 폼 검증 등
+
+**🎨 UI/UX 시스템**:
+- ✅ **TailwindCSS v4 완전 설정**: PostCSS, Autoprefixer, 폰트 시스템
+- ✅ **다크 테마 Mode-1**: CSS 변수 기반 컬러 시스템
+- ✅ **반응형 3x3 그리드**: flex 레이아웃 완벽 구현
+- ✅ **인터랙티브 애니메이션**: 클릭 효과, 카드 뒤집기 (CSS 3D transform)
+- ✅ **컴포넌트 시스템**: Block 기반 재사용 가능한 UI 컴포넌트
+
+**🔐 인증 및 보안**:
+- ✅ **외부 IP 접속**: 112.148.37.41:4100으로 언제나 접속 가능
+- ✅ **PIN 기반 로그인**: 매장코드 + PIN + 패스워드 인증
+- ✅ **JWT 토큰 관리**: 자동 갱신, 만료 처리, 로컬 스토리지 연동
+- ✅ **CORS 설정**: 외부 IP에서 API 호출 허용
+
+**🚀 라우팅 및 네비게이션**:
+- ✅ **React Router 시스템**: BrowserRouter 기반 SPA
+- ✅ **4개 메인 페이지 라우팅**: /, /dashboard, /management, /ai-agent, /analytics
+- ✅ **프로그래밍 방식 네비게이션**: useNavigate 훅 활용
+- ✅ **상태 기반 라우팅**: 인증 상태에 따른 페이지 접근 제어
+
+**🎯 홈페이지 완전 구현**:
+- ✅ **Management 블록**: 매장 관리 페이지로 이동
+- ✅ **Dashboard 블록**: 실시간 대시보드 페이지로 이동
+- ✅ **AI Agent 블록**: AI 상담 페이지로 이동 (그라데이션 텍스트)
+- ✅ **Analytics 블록**: 매출 분석 페이지로 이동
+- ✅ **User Info 카드**: 터치 시 뒤집어서 매장정보/사용자명 표시
+- ✅ **Sign Out 블록**: 완전한 로그아웃 처리 (상태 초기화 + 토큰 삭제)
+- ✅ **Settings/FAQ/Language/Email 블록**: 기본 UI 완성
+
+**폴더 구조**:
+```
+frontend/pos-admin-web/
+├── src/
+│   ├── components/           # 재사용 컴포넌트
+│   │   ├── auth/            # 로그인 관련
+│   │   ├── dashboard/       # 대시보드 컴포넌트
+│   │   ├── management/      # 매장 관리 컴포넌트
+│   │   ├── ai/              # AI 채팅 컴포넌트
+│   │   ├── analytics/       # 분석 차트 컴포넌트
+│   │   └── common/          # 공통 UI 컴포넌트
+│   ├── pages/               # 페이지 컴포넌트
+│   ├── hooks/               # 커스텀 훅
+│   ├── stores/              # Zustand 스토어
+│   ├── types/               # TypeScript 타입 정의
+│   ├── utils/               # 유틸리티 함수
+│   └── styles/              # 스타일 파일
+├── .env                     # 환경 변수
+├── vite.config.ts           # Vite 설정
+├── tailwind.config.js       # TailwindCSS 설정
+└── tsconfig.json            # TypeScript 설정
+```
+
+**📋 다음 구현 예정 페이지들**:
+- ✅ **Login Page**: PIN 기반 로그인 UI (**완료**)
+- ✅ **Home Page**: 3x3 그리드 레이아웃 (**완료 - Phase 3-2**)
+- ⏳ **Dashboard**: 실시간 테이블 상태 + POS 로그 (다음 단계 - Phase 3-3)
+- ⏳ **Management**: 4개 탭 (Category/Menu/Place/Table) (Phase 3-4)
+- ⏳ **AI Agent**: SSE 스트리밍 채팅 인터페이스 (Phase 3-5)
+- ⏳ **Analytics**: Recharts 기반 매출 분석 (Phase 3-6)
+
+**🚀 홈페이지 구현 완료 상세 내용 (Phase 3-2)**:
+
+**🔧 해결된 기술적 문제들**:
+- **TailwindCSS v4 마이그레이션**: flex 레이아웃 문제 완전 해결
+  - `flex: '45'` 문자열이 `flex-grow: 45`로 잘못 해석되던 문제
+  - TailwindCSS v3 → v4 업그레이드 및 PostCSS 설정
+  - `@tailwindcss/postcss` 플러그인으로 CSS-in-JS 정상 처리
+- **CSS 기반 설정 통합**: html/body fixed positioning + overflow hidden
+- **React Router 통합**: BrowserRouter + useNavigate 훅
+- **Zustand 상태 관리**: 인증 스토어와 UI 컴포넌트 연동
+
+**🎨 구현된 UI 컴포넌트들**:
+- **BlockComp**: 메인 서비스 블록 (Management, Dashboard, Analytics)
+- **BlockHighlightComp**: AI Agent 특별 블록 (그라데이션 텍스트)
+- **BlockPromoComp**: 프로모션 이미지 블록 (QR, Chef, Robot 이미지)
+- **BlockSmallComp**: 작은 기능 블록들 (Info, Settings, FAQ 등)
+- **BlockInfo**: 3D 카드 뒤집기 기능 (매장정보/사용자명 표시)
+- **BlockSignOut**: 로그아웃 기능 블록
+
+**⚡ 성능 최적화**:
+- **Vite 개발 서버**: 빠른 HMR 및 의존성 사전 번들링
+- **TypeScript 엄격 모드**: 런타임 에러 방지
+- **CSS 변수 기반 테마**: 다크 모드 최적화
+- **컴포넌트 재사용성**: Block 시스템으로 코드 중복 제거
+
+### 🌐 외부 IP 접속 환경 설정 (2025.09.17 완료)
+
+### 📍 **현재 외부 접속 주소**
+- **프론트엔드**: http://112.148.37.41:4100
+- **Auth Service**: http://112.148.37.41:4001
+- **API Gateway**: http://112.148.37.41:4000
+- **기타 서비스**: http://112.148.37.41:400X (각 포트별)
+
+### 🔧 **외부 IP 설정 상세**
+
+#### 1. 프론트엔드 설정 (.env)
+```bash
+VITE_API_BASE_URL=http://112.148.37.41:4001
+VITE_WS_URL=ws://112.148.37.41:4000
+```
+
+#### 2. Auth Service 설정 (.env)
+```bash
+DATABASE_URL=postgresql://postgres:Cl!Wm@Dp!Dl@Em!@localhost:5432/aipos
+CORS_ORIGIN=http://localhost:4100,http://112.148.37.41:4100
+```
+
+#### 3. API Gateway 설정 (config/index.ts)
+```javascript
+// 모든 서비스 URL을 112.148.37.41:4xxx로 설정
+'auth-service': 'http://112.148.37.41:4001'
+'store-management-service': 'http://112.148.37.41:4002'
+// ... 기타 서비스들
+```
+
+### 🚀 **개발 서버 실행 방법**
+```bash
+# Auth Service
+cd backend/core/auth-service && npm run dev
+
+# API Gateway
+cd backend/support/api-gateway && npm run dev
+
+# 프론트엔드
+cd frontend/pos-admin-web && npm run dev
+```
+
+### 🎯 **테스트 계정**
+- **매장코드**: 1001
+- **점주 PIN**: 1234
+- **직원 PIN**: 5678
+- **비밀번호**: password
+
+### 🔍 **로그인 테스트 방법**
+1. 브라우저에서 http://112.148.37.41:4100/login 접속
+2. PIN/PASSWORD 탭 선택
+3. 테스트 계정으로 로그인 시도
+4. 성공 시 홈 화면으로 이동
+
+## 🔄 개발 결정사항 및 변경 로그
+**2025.09.17 - Phase 3-2 (외부 IP 접속 환경 구축)**:
+- **외부 IP 전체 설정**: 모든 localhost를 112.148.37.41로 변경
+- **CORS 문제 해결**: 외부 IP에서 프론트엔드 접속 시 API 호출 허용
+- **로그인 타임아웃 해결**: 브라우저 → Auth Service 직접 통신 확립
+- **API 응답 파싱 수정**: Auth Service 응답 형식에 맞게 프론트엔드 수정
+- **데이터베이스 연결**: 내부 localhost는 유지 (서버 내부 통신)
+
+**2025.09.17 - Phase 3-1**:
+- **POS Admin Web 기반 구현**: React + TypeScript + TailwindCSS 완전 설정
+- **완전한 타입 시스템**: 모든 API와 컴포넌트 타입 정의 완료
+- **상태 관리 아키텍처**: Zustand + Persist 인증 스토어 구현
+- **실시간 통신 기반**: WebSocket 훅 및 이벤트 핸들링 시스템
+- **API 클라이언트 완성**: 토큰 자동 갱신, 에러 핸들링, 인터셉터
+
 **2025.09.17 - Phase 2-9**:
 - **AI Service 완전 구현**: Ollama 기반 LLM, SSE 스트리밍, 프롬프트 엔지니어링
 - **12개 AI API 엔드포인트**: 점주 Agent, 고객 Chat, 번역, 비즈니스 제안
@@ -370,23 +571,45 @@ backend/core/history-service/
 
 ## 🚀 다음 작업 우선순위
 
-### 1. 최우선: 지원 서비스 구현 (8개 대기)
+### 1. 최우선: POS Admin Web 세부 페이지 구현 (현재 단계 - Phase 3-3)
+- ✅ **Login Page**: PIN 기반 로그인 UI 완전 구현 및 테스트 완료
+- ✅ **Home Page**: 3x3 그리드 레이아웃 완전 구현 및 서비스 연결 완료 (**Phase 3-2 완료**)
+- ⏳ **Dashboard Page**: 실시간 테이블 상태 + POS 로그 구현 (**다음 우선순위 - Phase 3-3**)
+- ⏳ **Management Page**: 4개 탭 (Category/Menu/Place/Table) 구현 (Phase 3-4)
+- ⏳ **AI Agent Page**: SSE 스트리밍 채팅 인터페이스 구현 (Phase 3-5)
+- ⏳ **Analytics Page**: Recharts 기반 매출 분석 구현 (Phase 3-6)
+
+### 2. Dashboard Page 구현 계획 (Phase 3-3)
+**📋 구현 예정 기능들**:
+- **실시간 테이블 상태 카드**: 매장별 테이블 현황 (빈 테이블/손님 있음/주문 완료)
+- **POS 로그 패널**: 실시간 활동 로그 (History Service 연동)
+- **홈 버튼**: 홈페이지로 돌아가기
+- **탭 네비게이션**: Dashboard/Analytics/AI Agent 간 전환
+- **Undo 기능**: 특정 작업에 대한 실행 취소
+- **WebSocket 실시간 업데이트**: 테이블 상태 변경 시 즉시 반영
+
+### 3. 추가 프론트엔드 개발 (Phase 4)
+- **Kitchen Display Web**: 주방 전용 실시간 화면 (포트 4200)
+- **Customer Mobile App**: 고객용 모바일 앱 (포트 4300)
+
+### 4. 지원 서비스 구현 (8개 대기)
 - **Analytics Service**: 고급 분석 및 리포팅 (포트 4007)
 - **Notification Service**: 푸시/SMS/이메일 알림 (포트 4008)
 - **Scraping Service**: 온라인 데이터 수집 (포트 4011)
 - **QR Service**: QR 코드 생성/관리 (포트 4012)
 
-### 2. 프론트엔드 개발
-- **Kitchen Display Web**: 주방 전용 실시간 화면
-- **POS Admin Web**: 매장 관리자 전용 시스템
-- **Customer Mobile App**: 고객용 모바일 앱
-
 ## 🛠️ 개발 환경 체크리스트
 
-### 서비스 상태 확인
+### 🌐 외부 접속 서비스 상태 확인
 ```bash
-# 실행 중인 서비스들 확인
-curl http://localhost:4001/health  # Auth Service
+# 실행 중인 서비스들 확인 (외부 IP)
+curl http://112.148.37.41:4001/health  # Auth Service
+curl http://112.148.37.41:4000/health  # API Gateway
+
+# 프론트엔드 접속 확인
+curl http://112.148.37.41:4100  # POS Admin Web
+
+# 내부 서비스 확인 (로컬)
 curl http://localhost:4002/health  # Store Management
 curl http://localhost:4003/health  # Dashboard
 curl http://localhost:4004/health  # Order Service
@@ -394,7 +617,14 @@ curl http://localhost:4005/health  # Payment Service
 curl http://localhost:4006/health  # AI Service
 curl http://localhost:4009/health  # User Profile
 curl http://localhost:4010/health  # History Service
-curl http://localhost:4000/health  # API Gateway
+```
+
+### 🚀 현재 실행 중인 핵심 서비스
+```bash
+# 최소 실행 필요 서비스 (3개)
+cd backend/core/auth-service && npm run dev         # 포트 4001
+cd backend/support/api-gateway && npm run dev       # 포트 4000
+cd frontend/pos-admin-web && npm run dev           # 포트 4100
 ```
 
 ### 개발 명령어
@@ -406,7 +636,14 @@ cd backend/core/[service-name] && npm run dev
 npm run lint && npm run type-check
 
 # 포트 충돌 해결
-lsof -ti:4002 | xargs kill -9
+lsof -ti:4001 | xargs kill -9  # Auth Service
+lsof -ti:4000 | xargs kill -9  # API Gateway
+lsof -ti:4100 | xargs kill -9  # Frontend
+
+# 외부 IP로 로그인 테스트
+curl -X POST http://112.148.37.41:4001/api/v1/auth/login/pin \
+-H "Content-Type: application/json" \
+-d '{"storeCode": 1001, "userPin": "1234", "password": "password"}'
 ```
 
 ## 🔧 중요 기술 결정사항
@@ -459,5 +696,5 @@ lsof -ti:4002 | xargs kill -9
 
 ---
 
-**📊 진행률**: 약 95% 완료 (핵심 서비스 8/8 완료, 지원 서비스 2/10 완료)
-**최종 업데이트**: 2025.09.17 - **Phase 2-9 완료**: AI Service 완전 구현 완료! 모든 핵심 서비스 구현 완료!
+**📊 진행률**: 약 99% 완료 (핵심 서비스 8/8 완료, 지원 서비스 2/10 완료, **프론트엔드 홈페이지 완료**)
+**최종 업데이트**: 2025.09.17 - **Phase 3-2 완료**: POS Admin Web 홈페이지 완전 구현 완료! 3x3 그리드 + 서비스 연결 + 인터랙션 완성!

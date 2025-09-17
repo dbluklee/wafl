@@ -1,6 +1,6 @@
 # 서비스 현재 상태 (Service Status)
 
-## 🌐 현재 실행 중인 서버들 (2025.09.17 기준 - Phase 2-9 완료)
+## 🌐 현재 실행 중인 서버들 (2025.09.17 기준 - Phase 3-2 완료)
 
 ### 핵심 서비스 (Core Services)
 ```bash
@@ -52,6 +52,57 @@ URL: http://localhost:4010
 URL: http://localhost:4000
 상태: ✅ 실행 중 (전체 서비스 프록시 라우팅, 4000대 포트 매핑 완료)
 ```
+
+### 프론트엔드 서비스 (Frontend Services)
+```bash
+# POS Admin Web (점주/직원용 관리 인터페이스)
+포트: 4100
+URL: http://localhost:4100 (내부) / http://112.148.37.41:4100 (외부)
+상태: ✅ 실행 중 (Phase 3-2 완료: 홈페이지 3x3 그리드 + 서비스 연결 + 인터랙션 완성)
+기술스택: React 18 + TypeScript + Vite + TailwindCSS v4 + Zustand + React Router
+
+# Kitchen Display Web (주방용 실시간 화면)
+포트: 4200
+URL: http://localhost:4200
+상태: ⏳ 대기 (Phase 4 예정)
+
+# Customer Mobile App (고객용 모바일 앱)
+포트: 4300
+URL: http://localhost:4300
+상태: ⏳ 대기 (Phase 4 예정)
+```
+
+## 🏗️ Phase 3-2 주요 업데이트 (2025.09.17) - 프론트엔드 홈페이지 완전 구현
+
+### ✅ 완료된 작업
+1. **홈페이지 3x3 그리드 완성**: TailwindCSS v4 업그레이드로 flex 레이아웃 문제 완전 해결
+2. **React Router 라우팅**: 4개 메인 페이지 (/dashboard, /management, /ai-agent, /analytics)
+3. **인터랙티브 UI 구현**: 모든 블록 클릭 시 해당 서비스 페이지로 네비게이션
+4. **유저 인포 카드 뒤집기**: 터치 시 CSS 3D 애니메이션으로 매장정보/사용자명 표시
+5. **인증 시스템 완전 연동**: Zustand 스토어와 실시간 사용자 정보 연동
+
+### 🔧 해결된 기술적 문제들
+- **TailwindCSS v4 마이그레이션**: `flex: '45'` 문자열이 `flex-grow: 45`로 잘못 해석되던 문제
+- **PostCSS 설정**: `@tailwindcss/postcss` 플러그인으로 CSS-in-JS 정상 처리
+- **CSS 기반 설정**: html/body fixed positioning + overflow hidden
+- **React Router 통합**: BrowserRouter + useNavigate 훅
+- **상태 관리**: 인증 스토어와 UI 컴포넌트 연동
+
+### 🎨 구현된 UI 컴포넌트 시스템
+- **BlockComp**: 메인 서비스 블록 (Management, Dashboard, Analytics)
+- **BlockHighlightComp**: AI Agent 특별 블록 (그라데이션 텍스트)
+- **BlockPromoComp**: 프로모션 이미지 블록 (QR, Chef, Robot 이미지)
+- **BlockSmallComp**: 작은 기능 블록들 (Info, Settings, FAQ 등)
+- **BlockInfo**: 3D 카드 뒤집기 기능 (매장정보/사용자명 표시)
+- **BlockSignOut**: 로그아웃 기능 블록
+
+### 🚀 홈페이지 구현 완료 기능들
+- **Management 블록**: 매장 관리 페이지로 이동
+- **Dashboard 블록**: 실시간 대시보드 페이지로 이동
+- **AI Agent 블록**: AI 상담 페이지로 이동 (그라데이션 텍스트)
+- **Analytics 블록**: 매출 분석 페이지로 이동
+- **User Info 카드**: 터치 시 뒤집어서 매장정보/사용자명 표시
+- **Sign Out 블록**: 완전한 로그아웃 처리 (상태 초기화 + 토큰 삭제)
 
 ## 🏗️ Phase 2-9 주요 업데이트 (2025.09.17)
 

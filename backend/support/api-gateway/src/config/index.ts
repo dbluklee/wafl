@@ -19,51 +19,51 @@ const createServiceConfig = (
 const services: IServiceRegistry = {
   'auth-service': createServiceConfig(
     'auth-service',
-    process.env.AUTH_SERVICE_URL || 'http://localhost:3001'
+    process.env.AUTH_SERVICE_URL || 'http://112.148.37.41:4001'
   ),
   'store-management-service': createServiceConfig(
     'store-management-service',
-    process.env.STORE_MANAGEMENT_SERVICE_URL || 'http://localhost:3002'
+    process.env.STORE_MANAGEMENT_SERVICE_URL || 'http://112.148.37.41:4002'
   ),
   'dashboard-service': createServiceConfig(
     'dashboard-service',
-    process.env.DASHBOARD_SERVICE_URL || 'http://localhost:3003'
+    process.env.DASHBOARD_SERVICE_URL || 'http://112.148.37.41:4003'
   ),
   'order-service': createServiceConfig(
     'order-service',
-    process.env.ORDER_SERVICE_URL || 'http://localhost:3004'
+    process.env.ORDER_SERVICE_URL || 'http://112.148.37.41:4004'
   ),
   'payment-service': createServiceConfig(
     'payment-service',
-    process.env.PAYMENT_SERVICE_URL || 'http://localhost:3005'
+    process.env.PAYMENT_SERVICE_URL || 'http://112.148.37.41:4005'
   ),
   'ai-service': createServiceConfig(
     'ai-service',
-    process.env.AI_SERVICE_URL || 'http://localhost:3006'
+    process.env.AI_SERVICE_URL || 'http://112.148.37.41:4006'
   ),
   'analytics-service': createServiceConfig(
     'analytics-service',
-    process.env.ANALYTICS_SERVICE_URL || 'http://localhost:3007'
+    process.env.ANALYTICS_SERVICE_URL || 'http://112.148.37.41:4007'
   ),
   'notification-service': createServiceConfig(
     'notification-service',
-    process.env.NOTIFICATION_SERVICE_URL || 'http://localhost:3008'
+    process.env.NOTIFICATION_SERVICE_URL || 'http://112.148.37.41:4008'
   ),
   'user-profile-service': createServiceConfig(
     'user-profile-service',
-    process.env.USER_PROFILE_SERVICE_URL || 'http://localhost:3009'
+    process.env.USER_PROFILE_SERVICE_URL || 'http://112.148.37.41:4009'
   ),
   'history-service': createServiceConfig(
     'history-service',
-    process.env.HISTORY_SERVICE_URL || 'http://localhost:3010'
+    process.env.HISTORY_SERVICE_URL || 'http://112.148.37.41:4010'
   ),
   'scraping-service': createServiceConfig(
     'scraping-service',
-    process.env.SCRAPING_SERVICE_URL || 'http://localhost:3011'
+    process.env.SCRAPING_SERVICE_URL || 'http://112.148.37.41:4011'
   ),
   'qr-service': createServiceConfig(
     'qr-service',
-    process.env.QR_SERVICE_URL || 'http://localhost:3012'
+    process.env.QR_SERVICE_URL || 'http://112.148.37.41:4012'
   ),
 };
 

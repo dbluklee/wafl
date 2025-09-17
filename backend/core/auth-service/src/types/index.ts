@@ -18,8 +18,9 @@ export interface IAuthRequest extends Request {
 
 // Login Types
 export interface IPinLoginRequest {
-  storeCode: number;
+  storeCode: string;
   userPin: string;
+  password?: string;
 }
 
 export interface IMobileLoginRequest {

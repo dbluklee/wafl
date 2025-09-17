@@ -14,6 +14,9 @@ const router = Router();
 // 매장 가입 (온라인 원스톱)
 router.post('/stores/register', validateStoreRegister, authController.registerStore);
 
+// 통합 로그인 (PIN + Password)
+router.post('/login', validatePinLogin, authController.loginWithPin);
+
 // PIN 로그인
 router.post('/login/pin', validatePinLogin, authController.loginWithPin);
 
