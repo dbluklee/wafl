@@ -6,7 +6,7 @@
 **WAFL** - AI POS System (AI Agent 기반 차세대 외식업 주문결제 시스템)
 
 ## 현재 상태 (Current State)
-**🎉 History Service 완전 구현 완료! (Phase 2-8 완료, 핵심 서비스 7/7 완료)**
+**🎉 AI Service 완전 구현 완료! (Phase 2-9 완료, 핵심 서비스 8/8 완료)**
 
 ### 🎯 완료된 핵심 서비스들
 - ✅ **Auth Service** (포트 4001) - JWT 인증, PIN/SMS 로그인, 8개 API
@@ -14,9 +14,50 @@
 - ✅ **Dashboard Service** (포트 4003) - 실시간 대시보드, POS 로그, 15개 API
 - ✅ **Order Service** (포트 4004) - 주문/주방 관리, WebSocket, 32개 API
 - ✅ **Payment Service** (포트 4005) - 결제 처리, Mock PG, 7개 API
+- ✅ **AI Service** (포트 4006) - Ollama 기반 AI Agent, 번역, 추천, 12개 API (**2025.09.17 신규 구현 완료**)
 - ✅ **User Profile Service** (포트 4009) - 프로필/직원 관리, 8개 API
-- ✅ **History Service** (포트 4010) - 이력 추적, Undo/Redo, 8개 API (**2025.09.17 신규 구현 완료**)
+- ✅ **History Service** (포트 4010) - 이력 추적, Undo/Redo, 8개 API
 - ✅ **API Gateway** (포트 4000) - 중앙 라우팅, 12개 서비스 프록시
+
+### 📋 AI Service 상세 정보 (최신 구현)
+**목적**: Ollama 기반 점주 경영 컨설팅, 고객 대화, 메뉴 추천, 다국어 번역 핵심 서비스
+**포트**: 4006 (신규 구현)
+**개발 완료일**: 2025.09.17
+
+**핵심 기능**:
+1. **점주 AI Agent** - 실시간 분석, 맞춤형 조언, 비즈니스 인사이트, 자연어 대화
+2. **고객 AI Chat** - 메뉴 추천, 다국어 지원, 알레르기 고려, 식단 제한
+3. **다국어 번역** - 메뉴 번역, 매장 일괄번역, 문화적 설명, 고성능 캐싱
+4. **비즈니스 제안** - 매출 분석, 메뉴 최적화, 운영 개선, 마케팅 아이디어
+
+**API 엔드포인트 (12개)**:
+- **점주 AI Agent (6개)**: `POST /agent/chat`, `GET /agent/quick-questions`, `GET /agent/sessions/:id`, `POST /agent/sessions`, `GET /agent/insights`, `POST /agent/sessions/:id/summary`
+- **고객 AI Chat (3개)**: `POST /customer/chat`, `POST /customer/recommend`, `GET /customer/quick-questions`
+- **번역 서비스 (4개)**: `POST /translate/text`, `POST /translate/menu`, `POST /translate/batch`, `POST /translate/store/:storeId`
+- **제안 시스템 (3개)**: `GET /suggestions/revenue`, `GET /suggestions/menu`, `POST /analyze/feedback`
+
+**기술 스택**:
+- **LLM 엔진**: Ollama (gemma3:27b-it-q4_K_M) - http://112.148.37.41:1884
+- **Node.js + Express.js + TypeScript** (엄격 모드)
+- **SSE 스트리밍**: Server-Sent Events 기반 실시간 AI 응답
+- **TTL 기반 캐싱**: 30초/5분/1시간 단계별 인메모리 캐시
+- **프롬프트 엔지니어링**: 역할별 최적화된 시스템 프롬프트
+- **Winston 로깅**: 구조화된 로깅, AI 전용 로깅 메서드
+
+**고급 기능**:
+- **스트리밍 응답**: SSE로 실시간 AI 대화 (EventSource 기반)
+- **컨텍스트 통합**: Store Management, Dashboard, Order Service 데이터 연동
+- **캐시 전략**: 짧은/중간/긴 캐시로 성능 최적화
+- **Rate Limiting**: API 호출량 제한 및 보호
+- **세션 관리**: 대화 세션 TTL 관리 및 정리
+- **다국어 지원**: 한국어, 영어, 일본어, 중국어 등 10개 언어
+
+**해결된 기술적 과제**:
+- TypeScript 엄격 모드 완전 지원 (`exactOptionalPropertyTypes` 대응)
+- Ollama SDK 통합 및 스트리밍 응답 구현
+- 복잡한 프롬프트 템플릿 시스템 구축
+- 서비스 간 컨텍스트 데이터 통합
+- SSE 실시간 스트리밍 아키텍처 구현
 
 ### 📋 User Profile Service 상세 정보 (최신 구현)
 **목적**: 사용자 계정 관리 및 직원 관리 (CRM/포인트 시스템 제외)
@@ -134,11 +175,12 @@
 ```
 wafl/
 ├── backend/
-│   ├── core/                    # 핵심 서비스 (7개)
+│   ├── core/                    # 핵심 서비스 (8개)
 │   │   ├── auth-service/        # ✅ 완전 구현 (포트 4001)
 │   │   ├── store-management-service/  # ✅ 완전 구현 (포트 4002)
 │   │   ├── dashboard-service/   # ✅ 완전 구현 (포트 4003)
 │   │   ├── order-service/       # ✅ 완전 구현 (포트 4004)
+│   │   ├── ai-service/          # ✅ 완전 구현 (포트 4006)
 │   │   ├── user-profile-service/ # ✅ 완전 구현 (포트 4009)
 │   │   └── history-service/     # ✅ 완전 구현 (포트 4010)
 │   ├── support/                 # 지원 서비스 (10개)
@@ -158,6 +200,51 @@ wafl/
 - **테스트 계정**: 매장코드 1001, 점주PIN 1234, 직원PIN 5678
 
 ## 📚 개발 히스토리 및 진행 상황
+
+### 🏗️ Phase 2-9: AI Service 완전 구현 (2025.09.17)
+**목적**: Ollama 기반 LLM을 활용한 점주 경영 컨설팅, 고객 메뉴 추천, 다국어 번역 서비스 구현
+
+**구현 과정**:
+1. **Ollama 통합**: gemma3:27b-it-q4_K_M 모델 연동 및 건강성 체크
+2. **완전한 AI 아키텍처**: TypeScript 엄격 모드, Express.js, SSE 스트리밍 응답
+3. **4가지 AI 서비스**: 점주 Agent, 고객 Chat, 번역, 비즈니스 제안
+4. **프롬프트 엔지니어링**: 역할별 최적화된 시스템 프롬프트 및 컨텍스트 주입
+5. **TTL 캐싱 시스템**: 30초/5분/1시간 단계별 인메모리 캐시
+6. **서비스 통합**: Store Management, Dashboard, Order Service와 HTTP 통신
+
+**구현된 핵심 기능**:
+- **12개 API 엔드포인트**: 점주 Agent 6개, 고객 Chat 3개, 번역 4개, 제안 3개
+- **SSE 스트리밍**: EventSource 기반 실시간 AI 응답 (Agent Chat)
+- **컨텍스트 통합**: 매장 정보, 메뉴 데이터, 매출 분석 자동 연동
+- **다국어 번역**: 10개 언어 지원, 문화적 설명 포함
+- **세션 관리**: 대화 세션 TTL 관리 및 자동 정리
+- **Rate Limiting**: 분당 20회/60회 API 호출 제한
+
+**해결된 기술적 과제**:
+- TypeScript 엄격 모드 및 `exactOptionalPropertyTypes` 완전 대응
+- Ollama SDK 스트리밍 응답 AsyncIterable 타입 처리
+- 복잡한 프롬프트 템플릿 시스템 및 동적 컨텍스트 주입
+- SSE 실시간 스트리밍 아키텍처 구현
+- 서비스 간 HTTP 통신 오류 처리 및 캐시 무효화
+
+**완성된 파일 구조**:
+```
+backend/core/ai-service/
+├── src/
+│   ├── config/           # 환경 설정 (Ollama, AI 파라미터)
+│   ├── controllers/      # API 컨트롤러 (Agent, Customer, Translate)
+│   ├── middleware/       # 인증, 검증, Rate Limiting
+│   ├── routes/          # API 라우트 (12개 엔드포인트)
+│   ├── services/        # 비즈니스 로직 (Ollama, Context, Agent)
+│   ├── types/           # TypeScript 타입 정의 (AI 전용)
+│   ├── utils/           # 로거, 캐시, 프롬프트 템플릿
+│   ├── server.ts        # Express 서버 및 백그라운드 작업
+│   └── index.ts         # 서버 진입점
+├── package.json         # Ollama 의존성 및 스크립트
+├── tsconfig.json        # TypeScript 엄격 모드 설정
+├── .env                 # Ollama/AI 환경 변수
+└── README.md            # 완전한 AI Service 문서
+```
 
 ### 🏗️ Phase 2-8: History Service 완전 구현 (2025.09.17)
 **목적**: 전체 시스템의 활동 추적 및 Undo/Redo 기능을 제공하는 핵심 서비스 구현
@@ -257,11 +344,17 @@ backend/core/history-service/
 - ✅ 133개 포트 레퍼런스 완전 동기화
 
 ### 🔄 개발 결정사항 및 변경 로그
+**2025.09.17 - Phase 2-9**:
+- **AI Service 완전 구현**: Ollama 기반 LLM, SSE 스트리밍, 프롬프트 엔지니어링
+- **12개 AI API 엔드포인트**: 점주 Agent, 고객 Chat, 번역, 비즈니스 제안
+- **TypeScript 엄격 모드**: AsyncIterable, exactOptionalPropertyTypes 완전 대응
+- **핵심 서비스 8/8 완료**: 모든 Core 서비스 구현 완료
+
 **2025.09.17 - Phase 2-8**:
 - **History Service 완전 구현**: Undo/Redo 시스템, 감사 로그, 서비스 통합
 - **데이터베이스 스키마 확장**: HistoryLog, UndoStack 모델 추가
 - **TypeScript 엄격 모드**: 모든 타입 안전성 문제 해결
-- **핵심 서비스 7/7 완료**: 모든 Core 서비스 구현 완료
+- **핵심 서비스 7/8 완료**: History Service까지 구현 완료
 
 **2025.09.17 - Phase 2-7**:
 - **전체 포트 마이그레이션**: 3000/8000대 → 4000대 체계적 정리
@@ -277,13 +370,16 @@ backend/core/history-service/
 
 ## 🚀 다음 작업 우선순위
 
-### 1. 최우선: AI Service 구현
-- **위치**: `backend/core/ai-service/` (포트 4006)
-- **기능**: AI Agent 기반 주문 처리, 자연어 이해
+### 1. 최우선: 지원 서비스 구현 (8개 대기)
+- **Analytics Service**: 고급 분석 및 리포팅 (포트 4007)
+- **Notification Service**: 푸시/SMS/이메일 알림 (포트 4008)
+- **Scraping Service**: 온라인 데이터 수집 (포트 4011)
+- **QR Service**: QR 코드 생성/관리 (포트 4012)
 
-### 3. 프론트엔드 개발
+### 2. 프론트엔드 개발
 - **Kitchen Display Web**: 주방 전용 실시간 화면
 - **POS Admin Web**: 매장 관리자 전용 시스템
+- **Customer Mobile App**: 고객용 모바일 앱
 
 ## 🛠️ 개발 환경 체크리스트
 
@@ -295,6 +391,7 @@ curl http://localhost:4002/health  # Store Management
 curl http://localhost:4003/health  # Dashboard
 curl http://localhost:4004/health  # Order Service
 curl http://localhost:4005/health  # Payment Service
+curl http://localhost:4006/health  # AI Service
 curl http://localhost:4009/health  # User Profile
 curl http://localhost:4010/health  # History Service
 curl http://localhost:4000/health  # API Gateway
@@ -344,6 +441,15 @@ lsof -ti:4002 | xargs kill -9
 - **JWT Secret**: 다른 서비스와 동일한 키 사용
 - **서비스 URL**: Store Management (4002), Order (4004), User Profile (4009)
 
+### 💡 AI Service 개발 참조
+- **포트**: 4006
+- **LLM 서버**: http://112.148.37.41:1884 (Ollama)
+- **모델**: gemma3:27b-it-q4_K_M
+- **설정 파일**: `backend/core/ai-service/.env`
+- **주요 기능**: 점주 Agent, 고객 Chat, 번역, 비즈니스 제안
+- **JWT Secret**: 다른 서비스와 동일한 키 사용
+- **서비스 연동**: Store Management (4002), Dashboard (4003), Order (4004)
+
 ### 💡 User Profile Service 개발 참조
 - **포트**: 4009
 - **스키마 파일**: `backend/shared/database/prisma/schema.prisma`
@@ -353,5 +459,5 @@ lsof -ti:4002 | xargs kill -9
 
 ---
 
-**📊 진행률**: 약 90% 완료 (핵심 서비스 7/7 완료, 지원 서비스 2/10 완료)
-**최종 업데이트**: 2025.09.17 - **Phase 2-8 완료**: History Service 완전 구현 완료! 모든 핵심 서비스 구현 완료!
+**📊 진행률**: 약 95% 완료 (핵심 서비스 8/8 완료, 지원 서비스 2/10 완료)
+**최종 업데이트**: 2025.09.17 - **Phase 2-9 완료**: AI Service 완전 구현 완료! 모든 핵심 서비스 구현 완료!
