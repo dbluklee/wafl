@@ -5,18 +5,18 @@ import { API_ENDPOINTS, STORAGE_KEYS } from '@/utils/constants';
 import { toast } from 'sonner';
 
 // 타입 정의를 여기서 직접 선언
-interface LoginRequest {
+interface SigninRequest {
   storeCode: string;
   pin: string;
   password?: string;
 }
 
-interface MobileLoginRequest {
+interface MobileSigninRequest {
   phoneNumber: string;
   authCode: string;
 }
 
-interface LoginResponse {
+interface SigninResponse {
   accessToken: string;
   refreshToken: string;
   user: User;
@@ -52,10 +52,10 @@ interface AuthState {
   isLoading: boolean;
 
   // Actions
-  login: (credentials: LoginRequest) => Promise<void>;
-  mobileLogin: (credentials: MobileLoginRequest) => Promise<void>;
+  signin: (credentials: SigninRequest) => Promise<void>;
+  mobileSignin: (credentials: MobileSigninRequest) => Promise<void>;
   sendSmsCode: (phoneNumber: string) => Promise<void>;
-  logout: () => void;
+  signout: () => void;
   setTokens: (accessToken: string, refreshToken: string) => void;
   setUser: (user: User) => void;
   setStore: (store: Store) => void;
@@ -74,12 +74,12 @@ export const useAuthStore = create<AuthState>()(
       isAuthenticated: false,
       isLoading: false,
 
-      // Login action
-      login: async (credentials: LoginRequest) => {
+      // Signin action
+      signin: async (credentials: SigninRequest) => {
         set({ isLoading: true });
 
         try {
-          const response = await api.post<LoginResponse>(
+          const response = await api.post<SigninResponse>(
             API_ENDPOINTS.LOGIN,
             {
               storeCode: parseInt(credentials.storeCode),
@@ -143,11 +143,11 @@ export const useAuthStore = create<AuthState>()(
       },
 
       // Mobile login action
-      mobileLogin: async (credentials: MobileLoginRequest) => {
+      mobileSignin: async (credentials: MobileSigninRequest) => {
         set({ isLoading: true });
 
         try {
-          const response = await api.post<LoginResponse>(
+          const response = await api.post<SigninResponse>(
             API_ENDPOINTS.MOBILE_LOGIN,
             credentials
           );
@@ -220,8 +220,8 @@ export const useAuthStore = create<AuthState>()(
         }
       },
 
-      // Logout action
-      logout: () => {
+      // Signout action
+      signout: () => {
         // Call logout endpoint (optional, for server-side cleanup)
         api.post(API_ENDPOINTS.LOGOUT).catch(() => {
           // Ignore errors, we're logging out anyway
@@ -287,8 +287,8 @@ export const useAuthStore = create<AuthState>()(
         } catch (error) {
           console.error('Token refresh failed:', error);
 
-          // If refresh fails, logout user
-          get().logout();
+          // If refresh fails, signout user
+          get().signout();
 
           return false;
         }
@@ -338,7 +338,7 @@ export const useAuthStore = create<AuthState>()(
               } catch (retryError) {
                 console.error('Auth status retry failed:', retryError);
                 set({ isLoading: false });
-                get().logout();
+                get().signout();
               }
             } else {
               set({ isLoading: false });

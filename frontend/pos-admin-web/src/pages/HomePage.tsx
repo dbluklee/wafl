@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import BlockComp from '@/components/BlockComp';
 import HighlightBlock from '@/components/BlockHighlightComp';
 import BlockPromotion from '@/components/BlockPromoComp';
@@ -25,12 +26,14 @@ interface HomePageProps {
 }
 
 export default function HomePage({ onSignOut, onManagement, onDashboard, onAIAgent, onAnalytics }: HomePageProps) {
+  const navigate = useNavigate();
   const user = useAuthStore(selectUser);
   const store = useAuthStore(selectStore);
-  const logout = useAuthStore((state) => state.logout);
+  const signout = useAuthStore((state) => state.signout);
 
   const handleSignOut = () => {
-    logout();
+    signout();
+    navigate('/welcome');
     if (onSignOut) {
       onSignOut();
     }
@@ -101,7 +104,7 @@ export default function HomePage({ onSignOut, onManagement, onDashboard, onAIAge
                   enableFlip={true}
                   backContent={{
                     storeNumber: store?.code || "---",
-                    userPin: user?.name || "----"
+                    userPin: user?.id?.slice(-4) || "----"
                   }}
                 />
               </div>

@@ -313,3 +313,58 @@ export function getInitials(name: string): string {
     .join('')
     .slice(0, 2);
 }
+
+// Fullscreen utilities
+export function enterFullscreen(): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (!document.fullscreenElement) {
+      const documentElement = document.documentElement;
+
+      if (documentElement.requestFullscreen) {
+        documentElement.requestFullscreen().then(resolve).catch(reject);
+      } else if ((documentElement as any).webkitRequestFullscreen) {
+        (documentElement as any).webkitRequestFullscreen();
+        resolve();
+      } else if ((documentElement as any).msRequestFullscreen) {
+        (documentElement as any).msRequestFullscreen();
+        resolve();
+      } else {
+        reject(new Error('Fullscreen API is not supported'));
+      }
+    } else {
+      resolve();
+    }
+  });
+}
+
+export function exitFullscreen(): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (document.fullscreenElement) {
+      if (document.exitFullscreen) {
+        document.exitFullscreen().then(resolve).catch(reject);
+      } else if ((document as any).webkitExitFullscreen) {
+        (document as any).webkitExitFullscreen();
+        resolve();
+      } else if ((document as any).msExitFullscreen) {
+        (document as any).msExitFullscreen();
+        resolve();
+      } else {
+        reject(new Error('Fullscreen API is not supported'));
+      }
+    } else {
+      resolve();
+    }
+  });
+}
+
+export function toggleFullscreen(): Promise<void> {
+  if (document.fullscreenElement) {
+    return exitFullscreen();
+  } else {
+    return enterFullscreen();
+  }
+}
+
+export function isFullscreen(): boolean {
+  return !!document.fullscreenElement;
+}
