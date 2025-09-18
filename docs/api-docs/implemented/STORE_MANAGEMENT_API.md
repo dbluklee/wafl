@@ -493,7 +493,7 @@ NODE_ENV=development
 PORT=4002
 SERVICE_NAME=store-management-service
 
-DATABASE_URL=postgresql://postgres:password@localhost:5432/aipos?schema=public
+DATABASE_URL=postgresql://postgres:password@localhost:5200/aipos?schema=public
 
 CACHE_TTL=3600
 

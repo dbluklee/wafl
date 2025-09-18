@@ -10,6 +10,9 @@ router.use(authMiddleware);
 // 카테고리 목록 조회
 router.get('/', categoryController.getAll);
 
+// 카테고리 순서 변경 - 상세 조회보다 먼저 정의해야 함
+router.put('/reorder', categoryController.reorder);
+
 // 카테고리 상세 조회
 router.get('/:categoryId', categoryController.getById);
 
@@ -21,8 +24,5 @@ router.put('/:categoryId', categoryController.update);
 
 // 카테고리 삭제
 router.delete('/:categoryId', categoryController.delete);
-
-// 카테고리 순서 변경
-router.put('/reorder', categoryController.reorder);
 
 export default router;

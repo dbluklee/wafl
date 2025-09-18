@@ -226,7 +226,7 @@ Auth Service가 완전히 구현된 상태이므로, 다음 서비스들은 이�
 ### 테스트 계정 정보
 ```bash
 # Database 접속 (올바른 패스워드)
-DATABASE_URL="postgresql://postgres:Cl!Wm@Dp!Dl@Em!@localhost:5432/aipos?schema=public"
+DATABASE_URL="postgresql://postgres:Cl!Wm@Dp!Dl@Em!@localhost:5200/aipos?schema=public"
 
 # 테스트 계정
 매장 코드: 1001

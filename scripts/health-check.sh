@@ -36,7 +36,7 @@ check_service() {
 
 # Check infrastructure services
 echo "Infrastructure Services:"
-check_service "PostgreSQL" "localhost" 5432 || true
+check_service "PostgreSQL" "localhost" 5200 || true
 check_service "Redis" "localhost" 6379 || true
 check_service "RabbitMQ" "localhost" 15672 || true
 

@@ -24,7 +24,7 @@ const startServer = async () => {
       console.log(`🚀 ${config.serviceName} is running on port ${config.port}`);
       console.log(`📍 Environment: ${config.env}`);
       console.log(`📁 Upload directory: ${config.upload.dir}`);
-      console.log(`🔗 API Gateway URL: http://localhost:8080/api/v1/store`);
+      console.log(`🔗 API Gateway URL: http://localhost:4000/api/v1/store`);
       console.log(`🔐 JWT Secret configured: ${config.jwt.secret.substring(0, 10)}...`);
     });
 

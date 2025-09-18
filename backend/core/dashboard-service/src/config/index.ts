@@ -30,7 +30,7 @@ export const config = {
   cors: {
     origin: process.env.CORS_ORIGIN?.split(',') || [
       'http://localhost:3000',
-      'http://localhost:8080'
+      'http://localhost:4000'
     ],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
@@ -49,7 +49,7 @@ export const config = {
     cors: {
       origin: process.env.CORS_ORIGIN?.split(',') || [
         'http://localhost:3000',
-        'http://localhost:8080'
+        'http://localhost:4000'
       ],
       credentials: true
     },

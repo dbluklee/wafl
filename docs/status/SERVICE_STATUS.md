@@ -184,7 +184,7 @@ URL: http://localhost:4300
 ### 💾 접속 정보
 ```bash
 # 로컬 개발 환경
-DATABASE_URL="postgresql://postgres:Cl!Wm@Dp!Dl@Em!@localhost:5432/aipos?schema=public"
+DATABASE_URL="postgresql://postgres:Cl!Wm@Dp!Dl@Em!@localhost:5200/aipos?schema=public"
 Container: database-postgres-1
 
 # 테스트 계정 정보

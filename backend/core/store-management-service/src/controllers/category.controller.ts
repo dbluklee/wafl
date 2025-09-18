@@ -51,7 +51,14 @@ export class CategoryController {
       const authReq = req as IAuthRequest;
       const storeId = authReq.user!.storeId;
 
-      const category = await categoryService.create(storeId, req.body);
+      // 프론트엔드에서 'order' 필드를 보내는 경우 'sortOrder'로 변환
+      const categoryData = { ...req.body };
+      if (categoryData.order !== undefined) {
+        categoryData.sortOrder = categoryData.order;
+        delete categoryData.order;
+      }
+
+      const category = await categoryService.create(storeId, categoryData);
 
       res.status(201).json({
         success: true,

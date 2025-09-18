@@ -19,7 +19,7 @@ const createServiceConfig = (
 const services: IServiceRegistry = {
   'auth-service': createServiceConfig(
     'auth-service',
-    process.env.AUTH_SERVICE_URL || 'http://112.148.37.41:4001'
+    process.env.AUTH_SERVICE_URL || 'http://localhost:4001'
   ),
   'store-management-service': createServiceConfig(
     'store-management-service',

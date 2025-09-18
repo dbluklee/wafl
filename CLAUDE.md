@@ -8,7 +8,16 @@
 ## 현재 상태 (Current State)
 **🎉 API Gateway 프록시 연결 문제 완전 해결! 인증 시스템 정상 작동 (Phase 3-2+ 완료)**
 
-### 🚨 **최신 완료 사항 (2025.09.18 - Phase 3-3 완료: 완전한 인증 플로우 구현)**
+### 🚨 **최신 완료 사항 (2025.09.18 - Phase 3-4 완료: 매니지먼트 기능 완전 구현)**
+- ✅ **매니지먼트 기능 완전 구현**: 카테고리/메뉴/장소/테이블 4개 탭 완전한 CRUD 기능
+  - **카테고리 관리**: sortOrder 자동 할당, 드래그&드롭 순서 변경, 색상 선택, 실시간 메뉴 카운트
+  - **메뉴 관리**: 카테고리별 메뉴 생성/수정/삭제, 가격/설명/태그/알레르기 정보 관리
+  - **장소 관리**: 매장 내 구역별 관리, 색상 코딩, 테이블 수 자동 계산
+  - **테이블 관리**: QR 코드 자동 생성, 상태 관리 (available/occupied/reserved), 실시간 업데이트
+- ✅ **완전한 프론트엔드-백엔드 연동**: API Gateway를 통한 모든 CRUD 작업 정상 작동
+  - **실시간 DB 저장**: Prisma ORM을 통한 PostgreSQL 데이터 완전 저장 확인
+  - **트랜잭션 처리**: BEGIN/COMMIT을 통한 안전한 데이터 처리
+  - **Foreign Key 관계**: categories↔menus, places↔tables 관계 정상 작동
 - ✅ **프론트엔드 완성도 향상 완료**: WelcomePage 부터 HomePage까지 모든 UI/UX 개선
   - **전체화면 기능**: Sign In/Sign Up 버튼 클릭 시 자동 fullscreen 모드 진입
   - **용어 통일화**: 전체 코드베이스에서 login/logout → signin/signout 완전 통일
@@ -56,9 +65,9 @@
   - ✅ **인증 시스템**: authStore 중심 완전한 로그인/로그아웃 플로우 구현
   - ✅ **라우팅 시스템**: React Router 기반 SPA, 인증 상태 기반 접근 제어
   - ⏳ **Dashboard**: 실시간 테이블 상태 + POS 로그 (다음 단계 - Phase 3-4)
-  - ⏳ **Management**: 4개 탭 (Category/Menu/Place/Table) (Phase 3-5)
-  - ⏳ **AI Agent**: SSE 스트리밍 채팅 인터페이스 (Phase 3-6)
-  - ⏳ **Analytics**: Recharts 기반 매출 분석 (Phase 3-7)
+  - ✅ **Management**: 4개 탭 (Category/Menu/Place/Table) 완전 구현 (**Phase 3-4 완료**)
+  - ⏳ **AI Agent**: SSE 스트리밍 채팅 인터페이스 (Phase 3-5)
+  - ⏳ **Analytics**: Recharts 기반 매출 분석 (Phase 3-6)
 - ⏳ **Kitchen Display Web** (포트 4200) - 주방용 실시간 화면 (대기)
 - ⏳ **Customer Mobile App** (포트 4300) - 고객용 모바일 앱 (대기)
 
@@ -242,7 +251,7 @@ wafl/
 ## 🗃️ Database 정보
 - **PostgreSQL 15 + Prisma ORM** ✅ 완전 작동
 - **14개 테이블, 7개 Enum** ✅ Demo 데이터 포함
-- **접속**: `postgresql://postgres:Cl!Wm@Dp!Dl@Em!@localhost:5432/aipos`
+- **접속**: `postgresql://postgres:Cl!Wm@Dp!Dl@Em!@localhost:5200/aipos`
 - **테스트 계정**: 매장코드 1001, 점주PIN 1234, 직원PIN 5678
 
 ## 📚 개발 히스토리 및 진행 상황
@@ -362,7 +371,7 @@ backend/core/history-service/
 4. **Payment Service 완전 복구**: TypeScript 엄격 모드 대응 및 tsconfig-paths 설정
 
 **새로운 포트 체계**:
-- **API Gateway**: 4000 (기존 8080)
+- **API Gateway**: 4000 (기존 4000)
 - **Auth Service**: 4001 (기존 3001)
 - **Store Management**: 4002 (기존 3002)
 - **Dashboard Service**: 4003 (기존 3003)
@@ -523,7 +532,7 @@ VITE_WS_URL=ws://112.148.37.41:4000
 
 #### 2. Auth Service 설정 (.env)
 ```bash
-DATABASE_URL=postgresql://postgres:Cl!Wm@Dp!Dl@Em!@localhost:5432/aipos
+DATABASE_URL=postgresql://postgres:Cl!Wm@Dp!Dl@Em!@localhost:5200/aipos
 CORS_ORIGIN=http://localhost:4100,http://112.148.37.41:4100
 ```
 
@@ -601,6 +610,15 @@ cd frontend/pos-admin-web && npm run dev
 - **문서 동기화**: 15개 파일 133개 포트 레퍼런스 업데이트
 - **개발 환경 안정화**: 모든 서비스 정상 작동 검증 완료
 
+**2025.09.18 - Phase 3-4 (매니지먼트 기능 완전 구현)**:
+- **매니지먼트 4개 탭 완전 구현**: Category/Menu/Place/Table 완전한 CRUD 기능
+- **카테고리 관리**: sortOrder 자동 할당, 드래그&드롭 순서 변경, 색상 선택 완성
+- **메뉴 관리**: 카테고리별 메뉴 생성/수정/삭제, 가격/설명/태그/알레르기 정보 관리
+- **장소 관리**: 매장 내 구역별 관리, 색상 코딩, 테이블 수 자동 계산
+- **테이블 관리**: QR 코드 자동 생성, 상태 관리, 실시간 업데이트
+- **완전한 프론트엔드-백엔드 연동**: API Gateway를 통한 모든 CRUD 작업 정상 작동
+- **실시간 DB 저장 확인**: Prisma ORM을 통한 PostgreSQL 데이터 완전 저장 검증 완료
+
 **2025.09.17 - Phase 2-6**:
 - User Profile Service 포트: 3006 → 4009 (AI Service와 분리)
 - CRM/포인트 시스템 제거 결정
@@ -609,16 +627,16 @@ cd frontend/pos-admin-web && npm run dev
 
 ## 🚀 다음 작업 우선순위
 
-### 📍 **현재 단계: Phase 3-3 완료 (완전한 인증 플로우 구현 완료)**
-**✅ 프론트엔드 완성도 향상 및 인증 시스템 아키텍처 완전 개선 완료**
+### 📍 **현재 단계: Phase 3-4 완료 (매니지먼트 기능 완전 구현 완료)**
+**✅ 매니지먼트 4개 탭 CRUD 기능 완전 구현 및 DB 저장 상태 검증 완료**
 
-### 1. 최우선: POS Admin Web 세부 페이지 구현 (다음 단계 - Phase 3-4)
+### 1. 최우선: POS Admin Web 세부 페이지 구현 (다음 단계 - Phase 3-5)
 - ✅ **WelcomePage**: 전체화면 기능, Sign In/Sign Up 버튼 완전 구현 (**2025.09.18 완료**)
 - ✅ **SignInPage**: PIN/PASSWORD 및 MOBILE 탭, authStore 연동 완전 구현 (**2025.09.18 완료**)
 - ✅ **HomePage**: 3x3 그리드 레이아웃, 카드 뒤집기, 서비스 네비게이션 완성 (**Phase 3-2 완료**)
 - ✅ **인증 플로우**: 로그인 → 홈페이지 → 로그아웃 → Welcome 완벽한 플로우 구현 (**Phase 3-3 완료**)
-- 🎯 **Dashboard Page**: 실시간 테이블 상태 + POS 로그 구현 (**다음 최우선 - Phase 3-4**)
-- ⏳ **Management Page**: 4개 탭 (Category/Menu/Place/Table) 구현 (Phase 3-5)
+- ✅ **Management Page**: 4개 탭 (Category/Menu/Place/Table) 완전한 CRUD 기능 구현 (**Phase 3-4 완료**)
+- 🎯 **Dashboard Page**: 실시간 테이블 상태 + POS 로그 구현 (**다음 최우선 - Phase 3-5**)
 - ⏳ **AI Agent Page**: SSE 스트리밍 채팅 인터페이스 구현 (Phase 3-6)
 - ⏳ **Analytics Page**: Recharts 기반 매출 분석 구현 (Phase 3-7)
 
@@ -741,5 +759,5 @@ curl -X POST http://112.148.37.41:4001/api/v1/auth/login/pin \
 
 ---
 
-**📊 진행률**: 약 99% 완료 (핵심 서비스 8/8 완료, 지원 서비스 2/10 완료, **프론트엔드 인증 플로우 완전 구현 완료**)
-**최종 업데이트**: 2025.09.18 - **Phase 3-3 완료**: 완전한 인증 플로우 구현! WelcomePage → SignIn → HomePage → SignOut 완벽한 사용자 경험 구현!
+**📊 진행률**: 약 99% 완료 (핵심 서비스 8/8 완료, 지원 서비스 2/10 완료, **프론트엔드 매니지먼트 기능 완전 구현 완료**)
+**최종 업데이트**: 2025.09.18 - **Phase 3-4 완료**: 매니지먼트 기능 완전 구현! 카테고리/메뉴/장소/테이블 4개 탭 CRUD 기능 및 DB 저장 상태 검증 완료!

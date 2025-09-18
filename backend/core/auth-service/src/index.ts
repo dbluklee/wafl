@@ -16,12 +16,12 @@ const startServer = async () => {
     // Express 앱 생성
     const app = createApp();
 
-    // 서버 시작 (외부 접근 가능하도록 0.0.0.0 바인딩)
+    // 서버 시작 (모든 IP에서 접근 허용)
     const server = app.listen(config.port, '0.0.0.0', () => {
       console.log(`🚀 ${config.serviceName} is running on port ${config.port}`);
       console.log(`📍 Environment: ${config.env}`);
-      console.log(`🔗 Health check: http://localhost:${config.port}/health`);
-      console.log(`🌐 External access: http://112.148.37.41:${config.port}/health`);
+      console.log(`🔗 Internal access only: http://localhost:${config.port}/health`);
+      console.log(`🌐 External access via API Gateway: http://112.148.37.41:4000/api/v1/auth`);
     });
 
     // Graceful shutdown

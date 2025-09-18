@@ -4,7 +4,7 @@ import { useAuthStore } from '@/stores/authStore';
 import { DESIGN_TOKENS } from '../types/design-tokens';
 import SignInComp from '../components/auth/SignInComp';
 
-const LoginPage: React.FC = () => {
+const SigninPage: React.FC = () => {
   const { colors } = DESIGN_TOKENS;
   const { isAuthenticated, checkAuthStatus } = useAuthStore();
   const navigate = useNavigate();
@@ -44,4 +44,4 @@ const LoginPage: React.FC = () => {
   );
 };
 
-export default LoginPage;
+export default SigninPage;

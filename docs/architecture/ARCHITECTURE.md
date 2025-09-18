@@ -16,7 +16,7 @@
 # 전체 서비스 구조
 services:
   # Infrastructure (3)
-  - postgres:5432
+  - postgres:5200
   - redis:6379
   - rabbitmq:5672/15672
 

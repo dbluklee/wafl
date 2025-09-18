@@ -22,7 +22,7 @@
   - JWT 인증 미들웨어 및 권한 관리
   - 서비스별 Rate Limiting 및 헬스체크
   - WebSocket 프록시 및 실시간 모니터링
-  - **포트 8080에서 실행 중** 🚀
+  - **포트 4000에서 실행 중** 🚀
 
 ### 🔄 진행 중 (다음 우선순위)
 - **📊 Store Management Service** (포트 3002) - 매장 관리 시스템 **최우선**
@@ -75,8 +75,8 @@ npm install
 npm run dev
 
 # 헬스체크 확인
-curl http://localhost:8080/health
-curl http://localhost:8080/api/v1/gateway/health
+curl http://localhost:4000/health
+curl http://localhost:4000/api/v1/gateway/health
 ```
 
 ### 주요 명령어
@@ -108,7 +108,7 @@ make health
 
 ```
 📦 Infrastructure (3개) ✅
-├── PostgreSQL (5432) - 메인 데이터베이스
+├── PostgreSQL (5200) - 메인 데이터베이스
 ├── Redis (6379) - 세션 저장소
 └── RabbitMQ (5672) - 메시지 브로커
 

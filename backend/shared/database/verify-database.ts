@@ -4,7 +4,7 @@
 import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient({
-  datasourceUrl: "postgresql://postgres@localhost:5432/aipos?schema=public"
+  datasourceUrl: "postgresql://postgres@localhost:5200/aipos?schema=public"
 });
 
 async function verifyDatabase() {

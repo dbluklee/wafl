@@ -5,7 +5,7 @@
 **데이터베이스**: aipos
 **DBMS**: PostgreSQL 15 + UUID Extension
 **ORM**: Prisma
-**Connection**: postgresql://postgres:Cl!Wm@Dp!Dl@Em!@localhost:5432/aipos
+**Connection**: postgresql://postgres:Cl!Wm@Dp!Dl@Em!@localhost:5200/aipos
 **Version**: 1.0.0
 
 ### 📈 통계

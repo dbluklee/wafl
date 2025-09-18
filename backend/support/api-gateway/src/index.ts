@@ -52,8 +52,10 @@ class GatewayServer {
         return;
       }
 
-      this.server.listen(config.app.port, () => {
+      this.server.listen(config.app.port, '0.0.0.0', () => {
         console.log(`🌐 API Gateway listening on port ${config.app.port}`);
+        console.log(`🔗 Local access: http://localhost:${config.app.port}`);
+        console.log(`🌍 External access: http://112.148.37.41:${config.app.port}`);
         resolve();
       });
 

@@ -108,7 +108,7 @@ CMD ["nginx", "-g", "daemon off;"]
 NODE_ENV=development
 
 # Database
-DATABASE_URL=postgresql://postgres:password@postgres:5432/aipos
+DATABASE_URL=postgresql://postgres:password@postgres:5200/aipos
 REDIS_URL=redis://redis:6379
 RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672
 
