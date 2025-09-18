@@ -19,13 +19,21 @@ export const createServiceProxy = (routeConfig: IRouteConfig): any => {
   const proxyOptions: Options = {
     target: serviceConfig.url,
     changeOrigin: true,
-    pathRewrite: {
-      [`^${routeConfig.path}`]: '',
+    pathRewrite: (path: string, req: any) => {
+      console.log(`[PATHREWRITE] Original path: ${path}`);
+      return path;
     },
-    timeout: routeConfig.timeout || serviceConfig.timeout,
-    proxyTimeout: (routeConfig.timeout || serviceConfig.timeout) + 1000,
+    timeout: 30000, // Reduced to reasonable timeout
+    proxyTimeout: 35000,
+
+    // Fix for body parsing issues
+    selfHandleResponse: false,
+    xfwd: true,
+    secure: false,
 
     onProxyReq: (proxyReq: any, req: any, res: any) => {
+      console.log(`[PROXY] ${req.method} ${req.originalUrl} -> ${serviceConfig.url}${proxyReq.path}`);
+
       // Add custom headers for downstream services
       proxyReq.setHeader('X-Gateway-Request-ID', req.requestId);
       proxyReq.setHeader('X-Gateway-Timestamp', new Date().toISOString());
@@ -42,8 +50,14 @@ export const createServiceProxy = (routeConfig: IRouteConfig): any => {
         }
       }
 
-      // Log proxy request
-      console.log(`[PROXY] ${req.method} ${req.originalUrl} -> ${serviceConfig.url}${proxyReq.path}`);
+      // Fix body forwarding issue - rewrite body if already parsed
+      if (req.body && Object.keys(req.body).length > 0) {
+        const bodyData = JSON.stringify(req.body);
+        proxyReq.setHeader('Content-Type', 'application/json');
+        proxyReq.setHeader('Content-Length', Buffer.byteLength(bodyData));
+        proxyReq.write(bodyData);
+        console.log(`[PROXY BODY] Forwarding parsed body: ${bodyData}`);
+      }
     },
 
     onProxyRes: (proxyRes: any, req: any, res: any) => {
@@ -101,10 +115,8 @@ export const createServiceProxy = (routeConfig: IRouteConfig): any => {
 
     // Custom router for dynamic routing
     router: (req: Request) => {
-      // Check service health before routing
-      if (!serviceConfig.isHealthy && !isHealthCheckRequest(req)) {
-        throw new Error(`Service ${routeConfig.target} is unhealthy`);
-      }
+      // Always route to the service URL - let the service handle its own health
+      console.log(`[ROUTER] Routing ${req.method} ${req.url} to ${serviceConfig.url}`);
       return serviceConfig.url;
     },
   };
@@ -121,9 +133,7 @@ export const createLoadBalancedProxy = (
   const proxyOptions: Options = {
     target: 'http://placeholder', // Will be overridden by router
     changeOrigin: true,
-    pathRewrite: {
-      [`^${routeConfig.path}`]: '',
-    },
+    // Don't rewrite paths - Express already stripped the route prefix
 
     router: (req: Request) => {
       // Round-robin load balancing

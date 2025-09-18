@@ -113,8 +113,8 @@ class APIGateway {
       },
     }));
 
-    // Global timeout
-    this.app.use(timeoutHandler(30000) as any);
+    // Global timeout - increased for better stability
+    this.app.use(timeoutHandler(60000) as any);
 
     // JWT Authentication (will skip public routes internally)
     this.app.use(jwtAuthMiddleware as any);

@@ -39,9 +39,9 @@ services:
   - hardware-service:4015
 
   # Frontend Services (3)
-  - pos-admin-web:5000
-  - qr-order-web:5001
-  - kitchen-display-web:5002
+  - pos-admin-web:4100
+  - qr-order-web:4101
+  - kitchen-display-web:4102
 
   # Reverse Proxy (1)
   - nginx:80/443

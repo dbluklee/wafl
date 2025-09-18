@@ -6,7 +6,7 @@ export const routeConfigs: IRouteConfig[] = [
     path: '/api/v1/auth',
     target: 'auth-service',
     requireAuth: false, // Auth routes don't require auth themselves
-    timeout: 10000,
+    timeout: 30000,
   },
 
   // Store Management Service Routes

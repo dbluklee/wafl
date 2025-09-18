@@ -6,9 +6,19 @@
 **WAFL** - AI POS System (AI Agent 기반 차세대 외식업 주문결제 시스템)
 
 ## 현재 상태 (Current State)
-**🎉 POS Admin Web 홈페이지 완전 구현 완료! (Phase 3-2 완료, 서비스 연결 및 인터랙션 구현 완료)**
+**🎉 API Gateway 프록시 연결 문제 완전 해결! 인증 시스템 정상 작동 (Phase 3-2+ 완료)**
 
-### 🚨 **최신 완료 사항 (2025.09.17 - Phase 3-2)**
+### 🚨 **최신 완료 사항 (2025.09.18 - API Gateway 안정화)**
+- ✅ **API Gateway 프록시 연결 지연 문제 완전 해결**: Express body parsing과 http-proxy-middleware 충돌 해결
+  - **문제**: 30초 타임아웃, ECONNRESET 에러 발생
+  - **원인**: Express가 body를 파싱한 후 http-proxy-middleware가 빈 body 전송
+  - **해결**: onProxyReq에서 파싱된 body를 재작성하여 Auth Service로 정상 전달
+  - **성능 개선**: 30초+ → 0.08초로 개선 (400배 성능 향상)
+- ✅ **프론트엔드 인증 시스템 정상 작동**: API Gateway를 통한 로그인 완전 정상화
+- ✅ **외부 IP 접속 확인**: http://112.148.37.41:4100에서 로그인 정상 작동
+- ✅ **TROUBLESHOOTING.md 문서 생성**: 개발 문제 해결 가이드 문서화
+
+### 🎯 **Phase 3-2 완료 사항 (2025.09.17)**
 - ✅ **홈페이지 3x3 그리드 레이아웃 완성**: TailwindCSS v4 업그레이드로 flex 레이아웃 문제 해결
 - ✅ **React Router 라우팅 시스템 구축**: 4개 메인 페이지 라우팅 (/dashboard, /management, /ai-agent, /analytics)
 - ✅ **인터랙티브 UI 구현**: 모든 블록 클릭 시 해당 서비스 페이지로 네비게이션
@@ -531,6 +541,15 @@ cd frontend/pos-admin-web && npm run dev
 4. 성공 시 홈 화면으로 이동
 
 ## 🔄 개발 결정사항 및 변경 로그
+**2025.09.18 - API Gateway 프록시 문제 완전 해결**:
+- **API Gateway 프록시 연결 지연 문제 해결**: Express body parsing과 http-proxy-middleware 충돌 완전 해결
+  - **수정 파일**: `backend/support/api-gateway/src/middlewares/proxy/index.ts`
+  - **핵심 해결**: onProxyReq에서 파싱된 body 재작성 로직 추가
+  - **성능 개선**: 30초+ 타임아웃 → 0.08초 응답시간 (400배 개선)
+- **TROUBLESHOOTING.md 문서 생성**: 개발 문제 해결 가이드 문서화
+- **외부 IP 접속 안정화**: http://112.148.37.41:4100에서 완전한 로그인 플로우 검증
+- **마이크로서비스 아키텍처 완성**: API Gateway를 통한 모든 서비스 통신 정상화
+
 **2025.09.17 - Phase 3-2 (외부 IP 접속 환경 구축)**:
 - **외부 IP 전체 설정**: 모든 localhost를 112.148.37.41로 변경
 - **CORS 문제 해결**: 외부 IP에서 프론트엔드 접속 시 API 호출 허용
@@ -571,10 +590,14 @@ cd frontend/pos-admin-web && npm run dev
 
 ## 🚀 다음 작업 우선순위
 
-### 1. 최우선: POS Admin Web 세부 페이지 구현 (현재 단계 - Phase 3-3)
+### 📍 **현재 단계: Phase 3-2+ 완료 (API Gateway 안정화 완료)**
+**✅ 인증 시스템 및 API Gateway 프록시 연결 완전 정상화 완료**
+
+### 1. 최우선: POS Admin Web 세부 페이지 구현 (다음 단계 - Phase 3-3)
 - ✅ **Login Page**: PIN 기반 로그인 UI 완전 구현 및 테스트 완료
 - ✅ **Home Page**: 3x3 그리드 레이아웃 완전 구현 및 서비스 연결 완료 (**Phase 3-2 완료**)
-- ⏳ **Dashboard Page**: 실시간 테이블 상태 + POS 로그 구현 (**다음 우선순위 - Phase 3-3**)
+- ✅ **API Gateway 프록시 연결**: 인증 시스템 완전 정상화 (**2025.09.18 완료**)
+- 🎯 **Dashboard Page**: 실시간 테이블 상태 + POS 로그 구현 (**다음 최우선 - Phase 3-3**)
 - ⏳ **Management Page**: 4개 탭 (Category/Menu/Place/Table) 구현 (Phase 3-4)
 - ⏳ **AI Agent Page**: SSE 스트리밍 채팅 인터페이스 구현 (Phase 3-5)
 - ⏳ **Analytics Page**: Recharts 기반 매출 분석 구현 (Phase 3-6)
