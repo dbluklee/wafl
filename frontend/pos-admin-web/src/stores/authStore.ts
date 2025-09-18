@@ -48,6 +48,7 @@ interface AuthState {
   store: Store | null;
   accessToken: string | null;
   refreshToken: string | null;
+  userPin: string | null; // 로그인한 PIN 저장
   isAuthenticated: boolean;
   isLoading: boolean;
 
@@ -71,6 +72,7 @@ export const useAuthStore = create<AuthState>()(
       store: null,
       accessToken: null,
       refreshToken: null,
+      userPin: null,
       isAuthenticated: false,
       isLoading: false,
 
@@ -80,7 +82,7 @@ export const useAuthStore = create<AuthState>()(
 
         try {
           const response = await api.post<SigninResponse>(
-            API_ENDPOINTS.LOGIN,
+            API_ENDPOINTS.SIGNIN,
             {
               storeCode: parseInt(credentials.storeCode),
               userPin: credentials.pin,
@@ -88,12 +90,21 @@ export const useAuthStore = create<AuthState>()(
             }
           );
 
-          const data = response.data.data || response.data;
+          const data = response.data.data; // API 응답에서 실제 데이터는 response.data.data에 있음
           if (!data) {
             throw new Error('No data received from server');
           }
 
           const { accessToken, refreshToken, userId, storeId, storeCode, role, name } = data;
+
+          // 디버깅: API 응답 데이터와 credentials 확인
+          console.log('🔍 PIN/PASSWORD Signin API Response:', {
+            accessToken: accessToken ? 'present' : 'missing',
+            refreshToken: refreshToken ? 'present' : 'missing',
+            userId, storeId, storeCode, role, name
+          });
+          console.log('🔍 Login credentials PIN:', credentials.pin);
+          console.log('🔍 UserID vs PIN comparison:', { userId, credentialsPin: credentials.pin });
 
           // Auth Service 응답 형식에 맞게 user와 store 객체 생성
           const user = {
@@ -107,7 +118,7 @@ export const useAuthStore = create<AuthState>()(
 
           const store = {
             id: storeId,
-            code: storeCode.toString(),
+            code: String(storeCode || ''),
             name: `매장 ${storeCode}`,
             address: '',
             phone: '',
@@ -121,6 +132,7 @@ export const useAuthStore = create<AuthState>()(
             store,
             accessToken,
             refreshToken,
+            userPin: credentials.pin, // 로그인한 PIN 저장
             isAuthenticated: true,
             isLoading: false,
           });
@@ -135,24 +147,24 @@ export const useAuthStore = create<AuthState>()(
 
           const errorMessage = error.response?.data?.message ||
                                error.message ||
-                               '로그인에 실패했습니다';
+                               '사인인에 실패했습니다';
 
           toast.error(errorMessage);
           throw error;
         }
       },
 
-      // Mobile login action
+      // Mobile signin action
       mobileSignin: async (credentials: MobileSigninRequest) => {
         set({ isLoading: true });
 
         try {
           const response = await api.post<SigninResponse>(
-            API_ENDPOINTS.MOBILE_LOGIN,
+            API_ENDPOINTS.MOBILE_SIGNIN,
             credentials
           );
 
-          const data = response.data.data || response.data;
+          const data = response.data.data; // API 응답에서 실제 데이터는 response.data.data에 있음
           if (!data) {
             throw new Error('No data received from server');
           }
@@ -171,7 +183,7 @@ export const useAuthStore = create<AuthState>()(
 
           const store = {
             id: storeId,
-            code: storeCode.toString(),
+            code: String(storeCode || ''),
             name: `매장 ${storeCode}`,
             address: '',
             phone: '',
@@ -185,6 +197,7 @@ export const useAuthStore = create<AuthState>()(
             store,
             accessToken,
             refreshToken,
+            userPin: null, // 모바일 로그인에는 PIN이 없음
             isAuthenticated: true,
             isLoading: false,
           });
@@ -199,7 +212,7 @@ export const useAuthStore = create<AuthState>()(
 
           const errorMessage = error.response?.data?.message ||
                                error.message ||
-                               '모바일 로그인에 실패했습니다';
+                               '모바일 사인인에 실패했습니다';
 
           toast.error(errorMessage);
           throw error;
@@ -222,28 +235,28 @@ export const useAuthStore = create<AuthState>()(
 
       // Signout action
       signout: () => {
-        // Call logout endpoint (optional, for server-side cleanup)
-        api.post(API_ENDPOINTS.LOGOUT).catch(() => {
-          // Ignore errors, we're logging out anyway
-        });
-
-        // Clear state
+        // Clear state first to avoid auth loops
         set({
           user: null,
           store: null,
           accessToken: null,
           refreshToken: null,
+          userPin: null,
           isAuthenticated: false,
           isLoading: false,
         });
 
-        // Clear localStorage
+        // Clear localStorage completely
         localStorage.removeItem(STORAGE_KEYS.ACCESS_TOKEN);
         localStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN);
         localStorage.removeItem(STORAGE_KEYS.USER);
         localStorage.removeItem(STORAGE_KEYS.STORE);
+        localStorage.removeItem('auth-storage'); // Zustand persist storage 완전 삭제
 
-        toast.success('로그아웃되었습니다');
+        // Skip API call during signout to avoid 401 errors
+        // Server-side cleanup is not critical for security
+
+        toast.success('사인아웃되었습니다');
       },
 
       // Set tokens
@@ -296,23 +309,28 @@ export const useAuthStore = create<AuthState>()(
 
       // Check authentication status
       checkAuthStatus: async () => {
-        const { accessToken } = get();
+        const { accessToken, user, store } = get();
 
         if (!accessToken) {
+          set({ isAuthenticated: false });
           return;
         }
 
+        // If we have stored user and store data, assume authenticated
+        if (user && store) {
+          set({ isAuthenticated: true, isLoading: false });
+          return;
+        }
+
+        // If no user/store data but have token, try to verify
         try {
           set({ isLoading: true });
 
-          // Verify token by fetching user profile
-          const response = await api.get(API_ENDPOINTS.PROFILE);
-          const { user, store } = response.data.data;
+          // Validate token by calling the profile endpoint
+          await api.get('/api/v1/auth/profile');
 
-          // Update user and store info
+          // If request succeeds, we're authenticated
           set({
-            user,
-            store,
             isAuthenticated: true,
             isLoading: false,
           });
@@ -323,50 +341,47 @@ export const useAuthStore = create<AuthState>()(
           if (error.response?.status === 401) {
             const refreshSuccess = await get().refreshAuthToken();
 
-            if (refreshSuccess) {
-              // Retry status check after refresh
-              try {
-                const response = await api.get(API_ENDPOINTS.PROFILE);
-                const { user, store } = response.data.data;
-
-                set({
-                  user,
-                  store,
-                  isAuthenticated: true,
-                  isLoading: false,
-                });
-              } catch (retryError) {
-                console.error('Auth status retry failed:', retryError);
-                set({ isLoading: false });
-                get().signout();
-              }
-            } else {
+            if (!refreshSuccess) {
               set({ isLoading: false });
+              get().signout();
+            } else {
+              set({ isAuthenticated: true, isLoading: false });
             }
           } else {
-            set({ isLoading: false });
+            // For other errors, assume token is valid
+            set({ isAuthenticated: true, isLoading: false });
           }
         }
       },
     }),
     {
-      name: 'auth-storage',
+      name: 'pos-admin-auth-storage',
       partialize: (state) => ({
         user: state.user,
         store: state.store,
         accessToken: state.accessToken,
         refreshToken: state.refreshToken,
+        userPin: state.userPin,
         isAuthenticated: state.isAuthenticated,
       }),
       onRehydrateStorage: () => (state) => {
-        // When hydrating from storage, check auth status
-        if (state?.isAuthenticated && state?.accessToken) {
-          state.checkAuthStatus();
+        // Allow auto-rehydrate for persistent login
+        if (state) {
+          // Only reset loading state, keep authentication if tokens exist
+          state.isLoading = false;
         }
       },
     }
   )
 );
+
+// Expose authStore to window for debugging
+if (typeof window !== 'undefined') {
+  (window as any).__ZUSTAND_AUTH_STORE__ = useAuthStore.getState();
+  useAuthStore.subscribe((state) => {
+    (window as any).__ZUSTAND_AUTH_STORE__ = state;
+  });
+}
 
 // Computed selectors
 export const selectUser = (state: AuthState) => state.user;

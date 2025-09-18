@@ -1,6 +1,4 @@
-import { PrismaClient } from '../../../../../node_modules/@prisma/client';
-
-const prisma = new PrismaClient();
+import { prisma } from '@shared/database';
 
 export class ProfileService {
   // 프로필 조회 (기본 정보만)

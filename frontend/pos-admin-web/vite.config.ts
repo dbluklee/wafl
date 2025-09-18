@@ -21,6 +21,16 @@ export default defineConfig({
   },
   build: {
     outDir: 'dist',
-    sourcemap: true,
+    sourcemap: false,
+    minify: 'esbuild', // terser 대신 esbuild 사용 (더 빠름)
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom'],
+          router: ['react-router-dom'],
+          ui: ['zustand', 'sonner', 'clsx'],
+        },
+      },
+    },
   },
 })

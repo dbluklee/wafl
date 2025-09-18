@@ -1,5 +1,5 @@
-// WAFL project API base URL - Store Management Service
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://112.148.37.41:4002';
+// WAFL project API base URL - via API Gateway
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://112.148.37.41:4000';
 
 export interface StoreData {
   id: number;
@@ -24,38 +24,54 @@ export interface ApiRequestOptions {
   method?: string;
   headers?: Record<string, string>;
   body?: any;
-  storeId?: number;
+  storeId?: string;
 }
 
 class StoreContextService {
-  private currentStoreId: number | null = null;
+  private currentStoreId: string | null = null;
   private currentStore: StoreData | null = null;
 
   // Store context management
-  setCurrentStore(storeId: number, store?: StoreData) {
+  setCurrentStore(storeId: string, store?: StoreData) {
     this.currentStoreId = storeId;
     if (store) {
       this.currentStore = store;
     }
     // Store in localStorage for persistence
-    localStorage.setItem('currentStoreId', storeId.toString());
+    localStorage.setItem('currentStoreId', storeId);
     if (store) {
       localStorage.setItem('currentStore', JSON.stringify(store));
     }
   }
 
-  getCurrentStoreId(): number | null {
-    if (this.currentStoreId) {
-      return this.currentStoreId;
+  getCurrentStoreId(): string | null {
+    // Try to load from authStore (persist storage) first - this contains the UUID
+    const authStorage = localStorage.getItem('pos-admin-auth-storage');
+    if (authStorage) {
+      try {
+        const parsed = JSON.parse(authStorage);
+        const storeId = parsed.state?.store?.id;
+        if (storeId) {
+          console.log('🏪 Found storeId from authStore:', storeId);
+          return storeId; // Return the UUID directly
+        }
+      } catch (error) {
+        console.error('Failed to parse auth storage:', error);
+      }
     }
 
-    // Try to load from localStorage
-    const stored = localStorage.getItem('currentStoreId');
-    if (stored) {
-      this.currentStoreId = parseInt(stored);
-      return this.currentStoreId;
+    // Try to access the authStore state directly from window
+    try {
+      const authStoreState = (window as any).__ZUSTAND_AUTH_STORE__;
+      if (authStoreState?.store?.id) {
+        console.log('🏪 Found storeId from window authStore:', authStoreState.store.id);
+        return authStoreState.store.id;
+      }
+    } catch (e) {
+      console.log('No window authStore available');
     }
 
+    console.warn('⚠️ No storeId found in authStore!');
     return null;
   }
 
@@ -96,13 +112,58 @@ class StoreContextService {
 
     // Add store context via header
     if (storeId) {
-      headers['x-store-id'] = storeId.toString();
+      headers['x-store-id'] = storeId;
     }
 
-    // Get token from localStorage
-    const token = localStorage.getItem('authToken');
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
+    // Get token from localStorage (multiple possible keys)
+    const authToken = localStorage.getItem('authToken');
+    const authStorage = localStorage.getItem('pos-admin-auth-storage');
+    const accessToken = localStorage.getItem('access_token');
+
+    console.log('🔍 Debug Token Info:', {
+      authToken: authToken ? authToken.substring(0, 50) + '...' : null,
+      authStorage: authStorage ? 'exists' : null,
+      accessToken: accessToken ? accessToken.substring(0, 50) + '...' : null
+    });
+
+    let finalToken = null;
+
+    // Try to get token from Zustand persist storage
+    if (authStorage) {
+      try {
+        const parsed = JSON.parse(authStorage);
+        finalToken = parsed.state?.accessToken;
+        console.log('🔍 From authStorage:', finalToken ? finalToken.substring(0, 50) + '...' : null);
+      } catch (e) {
+        console.error('Failed to parse authStorage:', e);
+      }
+    }
+
+    // Fallback to other localStorage keys
+    if (!finalToken) {
+      finalToken = authToken || accessToken;
+    }
+
+    // If still no token, try to get from direct authStore access
+    if (!finalToken) {
+      try {
+        // Try to access the authStore state directly from window
+        const authStoreState = (window as any).__ZUSTAND_AUTH_STORE__;
+        if (authStoreState?.accessToken) {
+          finalToken = authStoreState.accessToken;
+          console.log('🔍 From window authStore:', finalToken.substring(0, 50) + '...');
+        }
+      } catch (e) {
+        console.log('No window authStore available');
+      }
+    }
+
+    if (finalToken) {
+      headers['Authorization'] = `Bearer ${finalToken}`;
+      console.log('🔑 Using token:', finalToken.substring(0, 50) + '...');
+    } else {
+      console.warn('⚠️ No auth token found in any location!');
+      console.log('Available localStorage keys:', Object.keys(localStorage));
     }
 
     const requestOptions: RequestInit = {

@@ -4,7 +4,7 @@ dotenv.config();
 
 export const config = {
   env: process.env.NODE_ENV || 'development',
-  port: parseInt(process.env.PORT || '3001', 10),
+  port: parseInt(process.env.PORT || '4001', 10),
   serviceName: process.env.SERVICE_NAME || 'auth-service',
 
   database: {
@@ -17,10 +17,7 @@ export const config = {
     refreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '30d'
   },
 
-  redis: {
-    url: process.env.REDIS_URL || 'redis://localhost:6379',
-    sessionTTL: parseInt(process.env.REDIS_SESSION_TTL || '86400', 10)
-  },
+  // Redis configuration removed - using in-memory store
 
   sms: {
     apiUrl: process.env.SMS_API_URL || '',

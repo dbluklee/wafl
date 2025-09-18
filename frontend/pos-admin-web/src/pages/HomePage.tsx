@@ -29,6 +29,7 @@ export default function HomePage({ onSignOut, onManagement, onDashboard, onAIAge
   const navigate = useNavigate();
   const user = useAuthStore(selectUser);
   const store = useAuthStore(selectStore);
+  const userPin = useAuthStore((state) => state.userPin);
   const signout = useAuthStore((state) => state.signout);
 
   const handleSignOut = () => {
@@ -104,7 +105,7 @@ export default function HomePage({ onSignOut, onManagement, onDashboard, onAIAge
                   enableFlip={true}
                   backContent={{
                     storeNumber: store?.code || "---",
-                    userPin: user?.id?.slice(-4) || "----"
+                    userPin: userPin || "----" // 실제 로그인한 PIN 표시
                   }}
                 />
               </div>

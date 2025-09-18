@@ -6,7 +6,7 @@ import { menuService, type MenuData } from './menuService';
 
 // Base interface for entities
 interface BaseEntity {
-  id?: number;
+  id?: string;
   name: string;
   [key: string]: any;
 }
@@ -217,7 +217,7 @@ export class CrudServiceWrapper<T extends BaseEntity> {
     }
   }
 
-  async update(id: number, updates: Partial<T>, oldEntity: T, logData?: any): Promise<T> {
+  async update(id: string, updates: Partial<T>, oldEntity: T, logData?: any): Promise<T> {
     try {
       // First update the entity
       const updated = await this.service[`update${this.entityType.charAt(0).toUpperCase() + this.entityType.slice(1)}`](id, updates);
@@ -237,7 +237,7 @@ export class CrudServiceWrapper<T extends BaseEntity> {
     }
   }
 
-  async delete(id: number, entity: T, logData?: any): Promise<void> {
+  async delete(id: string, entity: T, logData?: any): Promise<void> {
     try {
       // First delete the entity
       await this.service[`delete${this.entityType.charAt(0).toUpperCase() + this.entityType.slice(1)}`](id);

@@ -105,6 +105,20 @@ export class AuthController {
       next(error);
     }
   }
+
+  // 프로필 조회
+  async getProfile(req: Request, res: Response, next: NextFunction) {
+    try {
+      const authReq = req as IAuthRequest;
+      const profile = await authService.getProfile(authReq.user!.userId);
+      res.json({
+        success: true,
+        data: profile
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
 }
 
 export const authController = new AuthController();

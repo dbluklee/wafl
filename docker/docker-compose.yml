@@ -5,11 +5,10 @@ networks:
     driver: bridge
     ipam:
       config:
-        - subnet: 172.20.0.0/16
+        - subnet: 172.25.0.0/16
 
 volumes:
   postgres-data:
-  redis-data:
   rabbitmq-data:
 
 services:
@@ -30,23 +29,6 @@ services:
       - wafl-network
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-    restart: unless-stopped
-
-  redis:
-    image: redis:7-alpine
-    container_name: wafl-redis
-    command: redis-server --appendonly yes
-    ports:
-      - "${REDIS_PORT:-6379}:6379"
-    volumes:
-      - redis-data:/data
-    networks:
-      - wafl-network
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -75,26 +57,23 @@ services:
   # Backend Core Services
   auth-service:
     build:
-      context: ../backend/core/auth-service
-      dockerfile: Dockerfile
+      context: ..
+      dockerfile: backend/core/auth-service/Dockerfile
     container_name: wafl-auth-service
     environment:
       - NODE_ENV=${NODE_ENV:-development}
-      - DATABASE_URL=${DATABASE_URL}
-      - REDIS_URL=${REDIS_URL}
+      - DATABASE_URL=postgresql://postgres:password@postgres:5432/aipos?schema=public
       - JWT_SECRET=${JWT_SECRET}
       - JWT_EXPIRES_IN=${JWT_EXPIRES_IN:-7d}
     ports:
-      - "3001:3001"
+      - "4001:4001"
     depends_on:
       postgres:
         condition: service_healthy
-      redis:
-        condition: service_started
     networks:
       - wafl-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:4001/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -102,24 +81,23 @@ services:
 
   store-management-service:
     build:
-      context: ../backend/core/store-management-service
-      dockerfile: Dockerfile
+      context: ..
+      dockerfile: backend/core/store-management-service/Dockerfile
     container_name: wafl-store-management-service
     environment:
       - NODE_ENV=${NODE_ENV:-development}
-      - DATABASE_URL=${DATABASE_URL}
-      - REDIS_URL=${REDIS_URL}
-      - AUTH_SERVICE_URL=${AUTH_SERVICE_URL}
+      - DATABASE_URL=postgresql://postgres:password@postgres:5432/aipos?schema=public
+      - AUTH_SERVICE_URL=http://auth-service:4001
+      - JWT_SECRET=${JWT_SECRET}
     ports:
-      - "3002:3002"
+      - "4002:4002"
     depends_on:
       - auth-service
       - postgres
-      - redis
     networks:
       - wafl-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3002/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:4002/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -133,18 +111,16 @@ services:
     environment:
       - NODE_ENV=${NODE_ENV:-development}
       - DATABASE_URL=${DATABASE_URL}
-      - REDIS_URL=${REDIS_URL}
       - AUTH_SERVICE_URL=${AUTH_SERVICE_URL}
     ports:
-      - "3003:3003"
+      - "4003:4003"
     depends_on:
       - auth-service
       - postgres
-      - redis
     networks:
       - wafl-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3003/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:4003/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -158,22 +134,20 @@ services:
     environment:
       - NODE_ENV=${NODE_ENV:-development}
       - DATABASE_URL=${DATABASE_URL}
-      - REDIS_URL=${REDIS_URL}
       - RABBITMQ_URL=${RABBITMQ_URL}
       - AUTH_SERVICE_URL=${AUTH_SERVICE_URL}
       - STORE_SERVICE_URL=${STORE_SERVICE_URL}
     ports:
-      - "3004:3004"
+      - "4004:4004"
     depends_on:
       - auth-service
       - store-management-service
       - postgres
-      - redis
       - rabbitmq
     networks:
       - wafl-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3004/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:4004/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -187,18 +161,16 @@ services:
     environment:
       - NODE_ENV=${NODE_ENV:-development}
       - DATABASE_URL=${DATABASE_URL}
-      - REDIS_URL=${REDIS_URL}
       - AUTH_SERVICE_URL=${AUTH_SERVICE_URL}
     ports:
-      - "3009:3009"
+      - "4009:4009"
     depends_on:
       - auth-service
       - postgres
-      - redis
     networks:
       - wafl-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3009/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:4009/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -212,18 +184,16 @@ services:
     environment:
       - NODE_ENV=${NODE_ENV:-development}
       - DATABASE_URL=${DATABASE_URL}
-      - REDIS_URL=${REDIS_URL}
       - AUTH_SERVICE_URL=${AUTH_SERVICE_URL}
     ports:
-      - "3010:3010"
+      - "4010:4010"
     depends_on:
       - auth-service
       - postgres
-      - redis
     networks:
       - wafl-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3010/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:4010/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -232,27 +202,24 @@ services:
   # Backend Support Services
   api-gateway:
     build:
-      context: ../backend/support/api-gateway
-      dockerfile: Dockerfile
+      context: ..
+      dockerfile: backend/support/api-gateway/Dockerfile
     container_name: wafl-api-gateway
     environment:
       - NODE_ENV=${NODE_ENV:-development}
-      - REDIS_URL=${REDIS_URL}
-      - AUTH_SERVICE_URL=${AUTH_SERVICE_URL}
-      - STORE_SERVICE_URL=${STORE_SERVICE_URL}
-      - ORDER_SERVICE_URL=${ORDER_SERVICE_URL}
-      - PAYMENT_SERVICE_URL=${PAYMENT_SERVICE_URL}
+      - AUTH_SERVICE_URL=http://auth-service:4001
+      - STORE_MANAGEMENT_SERVICE_URL=http://store-management-service:4002
+      - ORDER_SERVICE_URL=http://order-service:4004
+      - PAYMENT_SERVICE_URL=http://payment-service:4005
+      - JWT_SECRET=${JWT_SECRET}
     ports:
-      - "3000:3000"
+      - "4000:4000"
     depends_on:
       - auth-service
-      - store-management-service
-      - order-service
-      - redis
     networks:
       - wafl-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:4000/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -266,19 +233,17 @@ services:
     environment:
       - NODE_ENV=${NODE_ENV:-development}
       - DATABASE_URL=${DATABASE_URL}
-      - REDIS_URL=${REDIS_URL}
       - PG_API_KEY=${PG_API_KEY}
       - AUTH_SERVICE_URL=${AUTH_SERVICE_URL}
     ports:
-      - "3005:3005"
+      - "4005:4005"
     depends_on:
       - auth-service
       - postgres
-      - redis
     networks:
       - wafl-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3005/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:4005/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -292,19 +257,17 @@ services:
     environment:
       - NODE_ENV=${NODE_ENV:-development}
       - DATABASE_URL=${DATABASE_URL}
-      - REDIS_URL=${REDIS_URL}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - AUTH_SERVICE_URL=${AUTH_SERVICE_URL}
     ports:
-      - "3006:3006"
+      - "4006:4006"
     depends_on:
       - auth-service
       - postgres
-      - redis
     networks:
       - wafl-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3006/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:4006/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -318,20 +281,18 @@ services:
     environment:
       - NODE_ENV=${NODE_ENV:-development}
       - DATABASE_URL=${DATABASE_URL}
-      - REDIS_URL=${REDIS_URL}
       - AUTH_SERVICE_URL=${AUTH_SERVICE_URL}
       - AI_SERVICE_URL=${AI_SERVICE_URL}
     ports:
-      - "3007:3007"
+      - "4007:4007"
     depends_on:
       - auth-service
       - ai-service
       - postgres
-      - redis
     networks:
       - wafl-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3007/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:4007/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -345,21 +306,19 @@ services:
     environment:
       - NODE_ENV=${NODE_ENV:-development}
       - DATABASE_URL=${DATABASE_URL}
-      - REDIS_URL=${REDIS_URL}
       - RABBITMQ_URL=${RABBITMQ_URL}
       - SMS_API_KEY=${SMS_API_KEY}
       - AUTH_SERVICE_URL=${AUTH_SERVICE_URL}
     ports:
-      - "3008:3008"
+      - "4008:4008"
     depends_on:
       - auth-service
       - postgres
-      - redis
       - rabbitmq
     networks:
       - wafl-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3008/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:4008/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -373,20 +332,18 @@ services:
     environment:
       - NODE_ENV=${NODE_ENV:-development}
       - DATABASE_URL=${DATABASE_URL}
-      - REDIS_URL=${REDIS_URL}
       - AUTH_SERVICE_URL=${AUTH_SERVICE_URL}
       - AI_SERVICE_URL=${AI_SERVICE_URL}
     ports:
-      - "3011:3011"
+      - "4011:4011"
     depends_on:
       - auth-service
       - ai-service
       - postgres
-      - redis
     networks:
       - wafl-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3011/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:4011/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -400,18 +357,16 @@ services:
     environment:
       - NODE_ENV=${NODE_ENV:-development}
       - DATABASE_URL=${DATABASE_URL}
-      - REDIS_URL=${REDIS_URL}
       - AUTH_SERVICE_URL=${AUTH_SERVICE_URL}
     ports:
-      - "3012:3012"
+      - "4012:4012"
     depends_on:
       - auth-service
       - postgres
-      - redis
     networks:
       - wafl-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3012/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:4012/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -425,18 +380,16 @@ services:
     environment:
       - NODE_ENV=${NODE_ENV:-development}
       - DATABASE_URL=${DATABASE_URL}
-      - REDIS_URL=${REDIS_URL}
       - AUTH_SERVICE_URL=${AUTH_SERVICE_URL}
     ports:
-      - "3013:3013"
+      - "4013:4013"
     depends_on:
       - auth-service
       - postgres
-      - redis
     networks:
       - wafl-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3013/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:4013/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -450,18 +403,16 @@ services:
     environment:
       - NODE_ENV=${NODE_ENV:-development}
       - DATABASE_URL=${DATABASE_URL}
-      - REDIS_URL=${REDIS_URL}
       - AUTH_SERVICE_URL=${AUTH_SERVICE_URL}
     ports:
-      - "3014:3014"
+      - "4014:4014"
     depends_on:
       - auth-service
       - postgres
-      - redis
     networks:
       - wafl-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3014/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:4014/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -475,18 +426,16 @@ services:
     environment:
       - NODE_ENV=${NODE_ENV:-development}
       - DATABASE_URL=${DATABASE_URL}
-      - REDIS_URL=${REDIS_URL}
       - AUTH_SERVICE_URL=${AUTH_SERVICE_URL}
     ports:
-      - "3015:3015"
+      - "4015:4015"
     depends_on:
       - auth-service
       - postgres
-      - redis
     networks:
       - wafl-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3015/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:4015/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -495,13 +444,13 @@ services:
   # Frontend Services
   pos-admin-web:
     build:
-      context: ../frontend/pos-admin-web
-      dockerfile: Dockerfile
-      args:
-        - REACT_APP_API_URL=${EXTERNAL_API_URL:-http://localhost}
+      context: ..
+      dockerfile: frontend/pos-admin-web/Dockerfile
     container_name: wafl-pos-admin-web
+    environment:
+      - VITE_API_BASE_URL=http://localhost:4000
     ports:
-      - "4000:80"
+      - "4100:80"
     depends_on:
       - api-gateway
     networks:
@@ -556,4 +505,177 @@ services:
       - wafl-network
     volumes:
       - ../nginx/ssl:/etc/nginx/ssl:ro
+    restart: unless-stopped
+
+  # Mock Services for API Gateway Testing
+  dashboard-service-mock:
+    image: node:18-alpine
+    container_name: wafl-dashboard-service-mock
+    working_dir: /app
+    volumes:
+      - ./mock-service.js:/app/mock-service.js
+      - ./package.json:/app/package.json
+    environment:
+      - PORT=4003
+      - SERVICE_NAME=dashboard-service
+    ports:
+      - "4003:4003"
+    networks:
+      wafl-network:
+        aliases:
+          - dashboard-service
+    command: sh -c "npm install && npm start"
+    restart: unless-stopped
+
+  order-service-mock:
+    image: node:18-alpine
+    container_name: wafl-order-service-mock
+    working_dir: /app
+    volumes:
+      - ./mock-service.js:/app/mock-service.js
+      - ./package.json:/app/package.json
+    environment:
+      - PORT=4004
+      - SERVICE_NAME=order-service
+    ports:
+      - "4004:4004"
+    networks:
+      - wafl-network
+    command: sh -c "npm install && npm start"
+    restart: unless-stopped
+
+  payment-service-mock:
+    image: node:18-alpine
+    container_name: wafl-payment-service-mock
+    working_dir: /app
+    volumes:
+      - ./mock-service.js:/app/mock-service.js
+      - ./package.json:/app/package.json
+    environment:
+      - PORT=4005
+      - SERVICE_NAME=payment-service
+    ports:
+      - "4005:4005"
+    networks:
+      - wafl-network
+    command: sh -c "npm install && npm start"
+    restart: unless-stopped
+
+  ai-service-mock:
+    image: node:18-alpine
+    container_name: wafl-ai-service-mock
+    working_dir: /app
+    volumes:
+      - ./mock-service.js:/app/mock-service.js
+      - ./package.json:/app/package.json
+    environment:
+      - PORT=4006
+      - SERVICE_NAME=ai-service
+    ports:
+      - "4006:4006"
+    networks:
+      - wafl-network
+    command: sh -c "npm install && npm start"
+    restart: unless-stopped
+
+  analytics-service-mock:
+    image: node:18-alpine
+    container_name: wafl-analytics-service-mock
+    working_dir: /app
+    volumes:
+      - ./mock-service.js:/app/mock-service.js
+      - ./package.json:/app/package.json
+    environment:
+      - PORT=4007
+      - SERVICE_NAME=analytics-service
+    ports:
+      - "4007:4007"
+    networks:
+      - wafl-network
+    command: sh -c "npm install && npm start"
+    restart: unless-stopped
+
+  notification-service-mock:
+    image: node:18-alpine
+    container_name: wafl-notification-service-mock
+    working_dir: /app
+    volumes:
+      - ./mock-service.js:/app/mock-service.js
+      - ./package.json:/app/package.json
+    environment:
+      - PORT=4008
+      - SERVICE_NAME=notification-service
+    ports:
+      - "4008:4008"
+    networks:
+      - wafl-network
+    command: sh -c "npm install && npm start"
+    restart: unless-stopped
+
+  user-profile-service-mock:
+    image: node:18-alpine
+    container_name: wafl-user-profile-service-mock
+    working_dir: /app
+    volumes:
+      - ./mock-service.js:/app/mock-service.js
+      - ./package.json:/app/package.json
+    environment:
+      - PORT=4009
+      - SERVICE_NAME=user-profile-service
+    ports:
+      - "4009:4009"
+    networks:
+      - wafl-network
+    command: sh -c "npm install && npm start"
+    restart: unless-stopped
+
+  history-service-mock:
+    image: node:18-alpine
+    container_name: wafl-history-service-mock
+    working_dir: /app
+    volumes:
+      - ./mock-service.js:/app/mock-service.js
+      - ./package.json:/app/package.json
+    environment:
+      - PORT=4010
+      - SERVICE_NAME=history-service
+    ports:
+      - "4010:4010"
+    networks:
+      - wafl-network
+    command: sh -c "npm install && npm start"
+    restart: unless-stopped
+
+  scraping-service-mock:
+    image: node:18-alpine
+    container_name: wafl-scraping-service-mock
+    working_dir: /app
+    volumes:
+      - ./mock-service.js:/app/mock-service.js
+      - ./package.json:/app/package.json
+    environment:
+      - PORT=4011
+      - SERVICE_NAME=scraping-service
+    ports:
+      - "4011:4011"
+    networks:
+      - wafl-network
+    command: sh -c "npm install && npm start"
+    restart: unless-stopped
+
+  qr-service-mock:
+    image: node:18-alpine
+    container_name: wafl-qr-service-mock
+    working_dir: /app
+    volumes:
+      - ./mock-service.js:/app/mock-service.js
+      - ./package.json:/app/package.json
+    environment:
+      - PORT=4012
+      - SERVICE_NAME=qr-service
+    ports:
+      - "4012:4012"
+    networks:
+      - wafl-network
+    command: sh -c "npm install && npm start"
     restart: unless-stopped

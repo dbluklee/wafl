@@ -11,6 +11,9 @@ router.use(authMiddleware);
 // 메뉴 목록 조회
 router.get('/', menuController.getAll);
 
+// 카테고리별 메뉴 조회
+router.get('/category/:categoryId', menuController.getByCategory);
+
 // 메뉴 상세 조회
 router.get('/:menuId', menuController.getById);
 

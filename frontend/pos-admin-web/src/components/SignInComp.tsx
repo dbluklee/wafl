@@ -113,18 +113,27 @@ export default function SignInComp({ onBack, onSignInComplete }: SignInCompProps
 
     try {
       // Use authStore signin method with new format
+      console.log('🔑 Starting PIN sign in process...');
       await signin({
         storeCode: pinForm.storeId,
         pin: pinForm.userPin,
         password: pinForm.password
       });
 
+      console.log('✅ PIN sign in successful, auth state updated');
+
       // Initialize logging session with user sign in
       await logUserSignIn(pinForm.userPin);
 
-      // Call completion callback
-      onSignInComplete?.();
+      console.log('📝 User logging session initialized');
+
+      // Add small delay to ensure state is fully updated before navigation
+      setTimeout(() => {
+        console.log('🏠 Calling sign in completion callback');
+        onSignInComplete?.();
+      }, 200);
     } catch (err) {
+      console.error('❌ PIN sign in failed:', err);
       setError(err instanceof Error ? err.message : 'Pin sign in failed');
     } finally {
       setIsLoading(false);

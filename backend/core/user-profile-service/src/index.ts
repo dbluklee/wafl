@@ -1,8 +1,6 @@
 import app from './app';
 import config from './config';
-import { PrismaClient } from '../../../../node_modules/@prisma/client';
-
-const prisma = new PrismaClient();
+import { prisma } from '@shared/database';
 
 // Graceful shutdown 핸들러
 const gracefulShutdown = async (signal: string) => {

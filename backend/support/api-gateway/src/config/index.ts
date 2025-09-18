@@ -69,7 +69,7 @@ const services: IServiceRegistry = {
 
 const config: IConfig = {
   app: {
-    port: parseInt(process.env.PORT || '3000'),
+    port: parseInt(process.env.PORT || '4000'),
     version: process.env.API_VERSION || 'v1',
     nodeEnv: process.env.NODE_ENV || 'development',
   },
@@ -91,14 +91,10 @@ const config: IConfig = {
   },
   services,
   websocket: {
-    port: parseInt(process.env.WS_PORT || '3000'),
+    port: parseInt(process.env.WS_PORT || '4000'),
     path: process.env.WS_PATH || '/ws',
   },
-  redis: {
-    host: process.env.REDIS_HOST || 'localhost',
-    port: parseInt(process.env.REDIS_PORT || '6379'),
-    password: process.env.REDIS_PASSWORD,
-  },
+  // Redis configuration removed - using in-memory store
   logging: {
     level: process.env.LOG_LEVEL || 'debug',
     format: process.env.LOG_FORMAT || 'combined',

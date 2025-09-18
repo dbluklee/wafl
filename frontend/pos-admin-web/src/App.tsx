@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { Routes, Route, useNavigate } from 'react-router-dom';
+import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import HomePage from '@/pages/HomePage';
 import DashboardPage from '@/pages/DashboardPage';
 import ManagementPage from '@/pages/ManagementPage';
@@ -10,9 +10,26 @@ import { useAuthStore } from '@/stores/authStore';
 
 function App() {
   const navigate = useNavigate();
+  const location = useLocation();
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const user = useAuthStore((state) => state.user);
+  const accessToken = useAuthStore((state) => state.accessToken);
   const signout = useAuthStore((state) => state.signout);
   const checkAuthStatus = useAuthStore((state) => state.checkAuthStatus);
+
+  // Enhanced authentication check: require both isAuthenticated flag and actual user data
+  const isReallyAuthenticated = isAuthenticated && user && accessToken;
+
+  // Debug authentication state changes
+  useEffect(() => {
+    console.log('🔍 Auth State Changed:', {
+      isAuthenticated,
+      hasUser: !!user,
+      hasAccessToken: !!accessToken,
+      isReallyAuthenticated,
+      currentPath: location.pathname
+    });
+  }, [isAuthenticated, user, accessToken, isReallyAuthenticated, location.pathname]);
 
   // Apply Mode-1 class to body for color variables
   useEffect(() => {
@@ -22,18 +39,38 @@ function App() {
     };
   }, []);
 
-  // Check authentication status on app start
+  // Check authentication status on app start (only if not on public pages)
   useEffect(() => {
-    checkAuthStatus();
-  }, [checkAuthStatus]);
+    const publicPaths = ['/welcome', '/signin', '/signup'];
+    if (!publicPaths.includes(location.pathname)) {
+      checkAuthStatus();
+    }
+  }, [checkAuthStatus, location.pathname]);
+
+  // URL masking - hide specific paths in address bar (but not during navigation)
+  useEffect(() => {
+    const hidePaths = ['/signin', '/signup', '/welcome', '/management', '/dashboard', '/ai-agent', '/analytics'];
+    if (hidePaths.includes(location.pathname)) {
+      // Use replaceState to hide the actual path but preserve navigation state
+      const timer = setTimeout(() => {
+        window.history.replaceState({ path: location.pathname }, '', '/');
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [location.pathname]);
 
   const handleSignOut = () => {
     signout();
-    navigate('/welcome');
+    // Use setTimeout to ensure signout state has been processed
+    setTimeout(() => {
+      navigate('/welcome', { replace: true });
+    }, 100);
   };
 
   const handleSignInComplete = () => {
-    navigate('/');
+    // Force navigate to home page after successful signin
+    console.log('🎯 Sign in completed, navigating to home');
+    navigate('/', { replace: true });
   };
 
   const handleSignUpComplete = () => {
@@ -108,7 +145,7 @@ function App() {
         <Route
           path="/"
           element={
-            isAuthenticated ? (
+            isReallyAuthenticated ? (
               <HomePage
                 onSignOut={handleSignOut}
                 onManagement={handleManagement}
@@ -136,6 +173,17 @@ function App() {
         />
         <Route path="/ai-agent" element={<div className="text-white p-8">AI Agent Page - Coming Soon</div>} />
         <Route path="/analytics" element={<div className="text-white p-8">Analytics Page - Coming Soon</div>} />
+
+        {/* Catch-all route - redirect any unknown paths to welcome */}
+        <Route
+          path="*"
+          element={
+            <WelcomePage
+              onSignUp={handleSignUp}
+              onSignIn={handleSignIn}
+            />
+          }
+        />
       </Routes>
     </div>
   );

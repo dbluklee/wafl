@@ -5,20 +5,20 @@ export const APP_VERSION = '1.0.0';
 // API endpoints
 export const API_ENDPOINTS = {
   // Auth
-  LOGIN: '/api/v1/auth/login/pin',
-  MOBILE_LOGIN: '/api/v1/auth/login/mobile',
+  SIGNIN: '/api/v1/auth/login/pin',
+  MOBILE_SIGNIN: '/api/v1/auth/login/mobile',
   SEND_SMS: '/api/v1/auth/mobile/request',
   VERIFY_SMS: '/api/v1/auth/mobile/verify',
-  LOGOUT: '/api/v1/auth/logout',
+  SIGNOUT: '/api/v1/auth/logout',
   REFRESH: '/api/v1/auth/refresh',
   PROFILE: '/api/v1/auth/profile',
 
   // Store Management
-  STORES: '/api/v1/stores',
-  CATEGORIES: '/api/v1/categories',
-  MENU_ITEMS: '/api/v1/menu-items',
-  PLACES: '/api/v1/places',
-  TABLES: '/api/v1/tables',
+  STORES: '/api/v1/store/stores',
+  CATEGORIES: '/api/v1/store/categories',
+  MENU_ITEMS: '/api/v1/store/menu-items',
+  PLACES: '/api/v1/store/places',
+  TABLES: '/api/v1/store/tables',
 
   // Dashboard
   DASHBOARD_STATS: '/api/v1/dashboard/stats',

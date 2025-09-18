@@ -17,6 +17,9 @@ import tableRoutes from './routes/table.routes';
 export const createApp = () => {
   const app = express();
 
+  // Trust proxy for API Gateway
+  app.set('trust proxy', true);
+
   // 보안 미들웨어
   app.use(helmet({
     crossOriginResourcePolicy: { policy: "cross-origin" }

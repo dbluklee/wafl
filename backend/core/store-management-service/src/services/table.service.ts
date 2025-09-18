@@ -37,6 +37,31 @@ export class TableService {
     return tables;
   }
 
+  async getByPlace(storeId: string, placeId: string): Promise<Table[]> {
+    // 캐시 확인
+    const cacheKey = `place_${placeId}`;
+    const cached = await cacheManager.get<Table[]>(storeId, 'table', cacheKey);
+    if (cached) return cached;
+
+    const tables = await prisma.table.findMany({
+      where: {
+        storeId,
+        placeId
+      },
+      include: {
+        place: true
+      },
+      orderBy: {
+        name: 'asc'
+      }
+    });
+
+    // 캐시 저장 (30초)
+    await cacheManager.set(storeId, 'table', tables, cacheKey, 30);
+
+    return tables;
+  }
+
   async getById(storeId: string, tableId: string): Promise<Table | null> {
     return prisma.table.findFirst({
       where: {

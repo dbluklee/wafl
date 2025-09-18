@@ -10,6 +10,7 @@ import ManagementSubItemsComp from '../components/ManagementSubItemsComp';
 import { tableColors, getHexColor, getCSSVariable } from '../components/InputColorComp';
 import { useLogging } from '../hooks/useLogging';
 import SyncStatus from '../components/SyncStatus';
+import { useAuthStore } from '../stores/authStore';
 import {
   placeServiceWithLogging,
   tableServiceWithLogging,
@@ -95,6 +96,9 @@ export default function ManagementPage({ onBack, onSignOut, onHome }: Management
   const [tabTransitioning, setTabTransitioning] = React.useState(false);
   const [loading, setLoading] = React.useState(false);
 
+  // Auth store 사용
+  const { user, store, isAuthenticated, accessToken } = useAuthStore();
+
   // Card editing mode state
   const [isCardEditMode, setIsCardEditMode] = React.useState(false);
   const [editingPlace, setEditingPlace] = React.useState<Place | null>(null);
@@ -153,14 +157,17 @@ export default function ManagementPage({ onBack, onSignOut, onHome }: Management
     try {
       setLoading(true);
       const tablesData = await tableService.getAllTables();
-      const mappedTables = tablesData.map((t: TableData) => ({
-        id: t.id!.toString(),
-        placeId: t.place_id.toString(),
+      const mappedTables = tablesData.map((t: any) => ({
+        id: t.id.toString(),
+        placeId: t.placeId,
         name: t.name,
-        color: t.color,
-        storeNumber: t.store_number,
-        userPin: t.user_pin,
-        createdAt: new Date(t.created_at!)
+        color: t.place?.color || '#28a745', // Use place color or default
+        positionX: 0,
+        positionY: 0,
+        diningCapacity: t.capacity || 4,
+        storeNumber: t.storeId || '',
+        userPin: '',
+        createdAt: new Date(t.createdAt || Date.now())
       }));
       setSavedTables(mappedTables);
     } catch (error) {
@@ -171,18 +178,21 @@ export default function ManagementPage({ onBack, onSignOut, onHome }: Management
   }, []);
 
   // Load tables for a specific place
-  const loadTablesByPlace = React.useCallback(async (placeId: number) => {
+  const loadTablesByPlace = React.useCallback(async (placeId: string) => {
     try {
       setLoading(true);
       const tablesData = await tableService.getTablesByPlace(placeId);
-      const mappedTables = tablesData.map((t: TableData) => ({
-        id: t.id!.toString(),
-        placeId: t.place_id.toString(),
+      const mappedTables = tablesData.map((t: any) => ({
+        id: t.id.toString(),
+        placeId: t.placeId,
         name: t.name,
-        color: t.color,
-        storeNumber: t.store_number,
-        userPin: t.user_pin,
-        createdAt: new Date(t.created_at!)
+        color: t.place?.color || '#28a745', // Use place color or default
+        positionX: 0,
+        positionY: 0,
+        diningCapacity: t.capacity || 4,
+        storeNumber: t.storeId || '',
+        userPin: '',
+        createdAt: new Date(t.createdAt || Date.now())
       }));
       setSavedTables(mappedTables);
     } catch (error) {
@@ -199,13 +209,13 @@ export default function ManagementPage({ onBack, onSignOut, onHome }: Management
       const categoriesData = await categoryService.getAllCategories();
       const mappedCategories = categoriesData.map((c: CategoryData) => ({
         id: c.id!.toString(),
-        storeNumber: c.store_number,
+        storeNumber: c.storeId || '1001',
         name: c.name,
         color: c.color,
-        menuCount: c.menu_count,
-        userPin: c.user_pin,
-        sortOrder: c.sort_order || 0,
-        createdAt: new Date(c.created_at!)
+        menuCount: c._count?.menus || 0,
+        userPin: user?.id || '01HZ1234-5678-9012-3456-789012345679',
+        sortOrder: c.sortOrder || 0,
+        createdAt: new Date(c.createdAt!)
       }));
       setSavedCategories(mappedCategories);
     } catch (error) {
@@ -213,7 +223,7 @@ export default function ManagementPage({ onBack, onSignOut, onHome }: Management
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [user]);
 
   // Load menus for a specific category
   const loadMenusByCategory = React.useCallback(async (categoryId: number) => {
@@ -222,14 +232,14 @@ export default function ManagementPage({ onBack, onSignOut, onHome }: Management
       const menusData = await menuService.getMenusByCategory(categoryId);
       const mappedMenus = menusData.map((m: MenuData) => ({
         id: m.id!.toString(),
-        categoryId: m.category_id.toString(),
+        categoryId: m.categoryId?.toString() || '',
         name: m.name,
         description: m.description,
-        price: m.price.toString(),
-        storeNumber: m.store_number,
-        userPin: m.user_pin,
-        sortOrder: m.sort_order || 0,
-        createdAt: new Date(m.created_at!)
+        price: m.price?.toString() || '0',
+        storeNumber: m.storeId || '',
+        userPin: 'default',
+        sortOrder: m.sortOrder || 0,
+        createdAt: new Date(m.createdAt!)
       }));
       setSavedMenus(mappedMenus);
     } catch (error) {
@@ -250,7 +260,7 @@ export default function ManagementPage({ onBack, onSignOut, onHome }: Management
     if (selectedTab === 'Table' && savedPlaces.length > 0 && !selectedPlace) {
       const firstPlace = savedPlaces[0];
       setSelectedPlace(firstPlace);
-      loadTablesByPlace(parseInt(firstPlace.id));
+      loadTablesByPlace(firstPlace.id);
     }
   }, [savedPlaces, selectedTab]);
 
@@ -265,7 +275,7 @@ export default function ManagementPage({ onBack, onSignOut, onHome }: Management
   // Load menus when selectedCategory changes
   React.useEffect(() => {
     if (selectedCategory) {
-      loadMenusByCategory(parseInt(selectedCategory.id));
+      loadMenusByCategory(selectedCategory.id);
     }
   }, [selectedCategory, loadMenusByCategory]);
 
@@ -386,11 +396,11 @@ export default function ManagementPage({ onBack, onSignOut, onHome }: Management
       await loadCategories();
       // Refresh tables if a place is selected
       if (selectedPlace) {
-        await loadTablesByPlace(parseInt(selectedPlace.id));
+        await loadTablesByPlace(selectedPlace.id);
       }
       // Refresh menus if a category is selected
       if (selectedCategory) {
-        await loadMenusByCategory(parseInt(selectedCategory.id));
+        await loadMenusByCategory(selectedCategory.id);
       }
       // Refresh undone log IDs to update the UI
       await refreshUndoneLogIds();
@@ -402,16 +412,15 @@ export default function ManagementPage({ onBack, onSignOut, onHome }: Management
   };
 
   const handleSave = async (name: string, selectedColor: string, storeNumber?: string, userPin?: string, placeId?: string, description?: string, price?: string, diningCapacity?: number) => {
-    // Get current user from localStorage
-    const currentUserStr = localStorage.getItem('currentUser');
-    if (!currentUserStr) {
-      alert('Please sign in to create a place.');
+    // Check authentication using authStore
+    if (!isAuthenticated || !user || !store || !accessToken) {
+      const itemType = selectedTab.toLowerCase();
+      alert(`Please sign in to create a ${itemType}.`);
       return;
     }
 
-    const currentUser = JSON.parse(currentUserStr);
-    const currentStoreNumber = storeNumber || currentUser.storeNumber;
-    const currentUserPin = userPin || currentUser.userPin;
+    const currentStoreNumber = storeNumber || store.code;
+    const currentUserPin = userPin || user.id;
 
     console.log('Saving:', { name, selectedColor, storeNumber: currentStoreNumber, userPin: currentUserPin });
 
@@ -481,24 +490,24 @@ export default function ManagementPage({ onBack, onSignOut, onHome }: Management
 
         // Create table on server with integrated logging
         const newTableData = await tableServiceWithLogging.create({
-          place_id: parseInt(placeId),
+          placeId: placeId,
           name,
           color: selectedColor, // selectedColor is now the place's color (already hex)
-          dining_capacity: diningCapacity || 4, // Default to 4 if not provided
+          diningCapacity: diningCapacity || 4, // Default to 4 if not provided
         }, { placeName: selectedPlace?.name });
 
         // Convert to local Table interface
         const newTable: Table = {
-          id: newTableData.id!.toString(),
-          placeId: newTableData.place_id.toString(),
+          id: newTableData.id.toString(),
+          placeId: newTableData.placeId,
           name: newTableData.name,
-          color: getCSSVariable(newTableData.color), // Convert hex back to CSS variable
+          color: selectedColor, // Use the selected color
           positionX: 0,
           positionY: 0,
-          diningCapacity: newTableData.dining_capacity,
-          storeNumber: newTableData.store_id.toString(),
+          diningCapacity: newTableData.capacity || 4,
+          storeNumber: newTableData.storeId || '',
           userPin: currentUserPin,
-          createdAt: new Date(newTableData.created_at!)
+          createdAt: new Date(newTableData.createdAt || Date.now())
         };
 
         // Start fade animation
@@ -509,7 +518,7 @@ export default function ManagementPage({ onBack, onSignOut, onHome }: Management
         setTimeout(async () => {
           // Reload tables from server to ensure UI is in sync
           if (selectedPlace) {
-            await loadTablesByPlace(parseInt(selectedPlace.id));
+            await loadTablesByPlace(selectedPlace.id);
           }
           setIsAddMode(false);
 
@@ -539,23 +548,29 @@ export default function ManagementPage({ onBack, onSignOut, onHome }: Management
           : 1;
 
         // Create category on server with integrated logging
+        console.log('🔄 Creating category with auth check:', {
+          isAuthenticated,
+          accessToken: accessToken ? accessToken.substring(0, 50) + '...' : null,
+          user: user?.id,
+          store: store?.id
+        });
+
         const newCategoryData = await categoryServiceWithLogging.create({
           name,
           color: getHexColor(selectedColor), // Convert CSS variable to hex
-          menu_count: 0,
           sortOrder: nextSortOrder,
         });
 
         // Convert to local Category interface
         const newCategory: Category = {
           id: newCategoryData.id!.toString(),
-          storeNumber: newCategoryData.store_id.toString(),
+          storeNumber: newCategoryData.storeId!.toString(),
           name: newCategoryData.name,
           color: getCSSVariable(newCategoryData.color), // Convert hex back to CSS variable
-          menuCount: newCategoryData.menu_count,
+          menuCount: newCategoryData._count?.menus || 0,
           userPin: currentUserPin,
-          sortOrder: newCategoryData.sort_order || 0,
-          createdAt: new Date(newCategoryData.created_at!)
+          sortOrder: newCategoryData.sortOrder || 0,
+          createdAt: new Date(newCategoryData.createdAt!)
         };
 
         // Start fade animation
@@ -595,25 +610,23 @@ export default function ManagementPage({ onBack, onSignOut, onHome }: Management
 
         // Create menu on server with integrated logging
         const newMenuData = await menuServiceWithLogging.create({
-          category_id: parseInt(selectedCategory.id),
-          store_number: currentStoreNumber,
+          categoryId: selectedCategory.id,
           name,
           price: parseInt(price || '0'),
-          description: description || '',
-          user_pin: currentUserPin
+          description: description || ''
         }, { categoryName: selectedCategory.name });
 
         // Convert to local Menu interface
         const newMenu: Menu = {
-          id: newMenuData.id!.toString(),
-          categoryId: newMenuData.category_id.toString(),
+          id: newMenuData.id!,
+          categoryId: newMenuData.categoryId!,
           name: newMenuData.name,
           description: newMenuData.description,
-          price: newMenuData.price?.toString(),
-          storeNumber: newMenuData.store_number,
-          userPin: newMenuData.user_pin,
-          sortOrder: newMenuData.sort_order || 0,
-          createdAt: new Date(newMenuData.created_at!)
+          price: newMenuData.price?.toString() || '0',
+          storeNumber: newMenuData.storeId || '',
+          userPin: 'default',
+          sortOrder: newMenuData.sortOrder || 0,
+          createdAt: new Date(newMenuData.createdAt!)
         };
 
         // Add the new menu
@@ -643,19 +656,18 @@ export default function ManagementPage({ onBack, onSignOut, onHome }: Management
 
       // Prepare entity data for logging
       const menuData: MenuData = {
-        id: parseInt(menu.id),
-        category_id: parseInt(menu.categoryId),
-        store_number: menu.storeNumber,
+        id: menu.id,
+        categoryId: menu.categoryId,
+        storeId: menu.storeNumber,
         name: menu.name,
         price: parseInt(menu.price || '0'),
         description: menu.description,
-        user_pin: menu.userPin,
-        sort_order: menu.sortOrder
+        sortOrder: menu.sortOrder
       };
 
       // Delete from server with integrated logging
       await menuServiceWithLogging.delete(
-        parseInt(menu.id),
+        menu.id,
         menuData,
         { categoryName }
       );
@@ -701,17 +713,17 @@ export default function ManagementPage({ onBack, onSignOut, onHome }: Management
 
       // Prepare entity data for logging
       const tableData: TableData = {
-        id: parseInt(table.id),
-        place_id: parseInt(table.placeId),
-        store_id: parseInt(table.storeNumber),
+        id: table.id,
+        placeId: table.placeId,
+        storeId: table.storeNumber,
         name: table.name,
         color: getHexColor(table.color),
-        dining_capacity: table.diningCapacity || 4
+        diningCapacity: table.diningCapacity || 4
       };
 
       // Delete from server with integrated logging
       await tableServiceWithLogging.delete(
-        parseInt(table.id),
+        table.id,
         tableData,
         { placeName: place?.name }
       );
@@ -724,7 +736,7 @@ export default function ManagementPage({ onBack, onSignOut, onHome }: Management
       setTimeout(async () => {
         // Reload tables from server to ensure UI is in sync
         if (selectedPlace) {
-          await loadTablesByPlace(parseInt(selectedPlace.id));
+          await loadTablesByPlace(selectedPlace.id);
         }
 
         // Fade in remaining cards
@@ -749,17 +761,17 @@ export default function ManagementPage({ onBack, onSignOut, onHome }: Management
 
       // Prepare entity data for logging
       const placeData: PlaceData = {
-        id: parseInt(place.id),
-        store_id: parseInt(place.storeNumber),
+        id: place.id,
+        storeId: place.storeNumber,
         name: place.name,
         color: getHexColor(place.color),
-        table_count: place.tableCount,
-        sort_order: place.sortOrder
+        tableCount: place.tableCount,
+        sortOrder: place.sortOrder
       };
 
       // Delete from server with integrated logging
       await placeServiceWithLogging.delete(
-        parseInt(place.id),
+        place.id,
         placeData
       );
 
@@ -792,22 +804,32 @@ export default function ManagementPage({ onBack, onSignOut, onHome }: Management
 
   const handleCategoryDelete = async (category: Category) => {
     console.log('🗑️ handleCategoryDelete called for category:', category);
+
+    // Pre-check: If category has menus, prevent deletion
+    if (category.menuCount > 0) {
+      alert(
+        `Cannot delete "${category.name}" because it contains ${category.menuCount} menu item(s).\n\n` +
+        `Please delete all menu items in this category first, then try again.`
+      );
+      return; // Cannot delete
+    }
+
     try {
       setLoading(true);
 
       // Prepare entity data for logging
       const categoryData: CategoryData = {
-        id: parseInt(category.id),
-        store_id: parseInt(category.storeNumber),
+        id: category.id,
+        storeId: category.storeNumber,
         name: category.name,
         color: getHexColor(category.color),
-        menu_count: category.menuCount,
-        sort_order: category.sortOrder
+        _count: { menus: category.menuCount },
+        sortOrder: category.sortOrder
       };
 
       // Delete from server with integrated logging
       await categoryServiceWithLogging.delete(
-        parseInt(category.id),
+        category.id,
         categoryData
       );
 
@@ -829,7 +851,20 @@ export default function ManagementPage({ onBack, onSignOut, onHome }: Management
 
     } catch (error) {
       console.error('❌ Failed to delete category:', error);
-      alert('Failed to delete category. Please try again.');
+
+      // Parse error message to provide more specific feedback
+      let errorMessage = 'Failed to delete category. Please try again.';
+
+      if (error instanceof Error) {
+        if (error.message.includes('메뉴가 있는 카테고리는 삭제할 수 없습니다') ||
+            error.message.includes('Cannot delete category with existing menus')) {
+          errorMessage = `Cannot delete "${category.name}" because it contains ${category.menuCount} menu(s). Please delete all menus in this category first.`;
+        } else if (error.message.includes('Foreign key constraint')) {
+          errorMessage = `Cannot delete "${category.name}" because it has associated data. Please remove all related items first.`;
+        }
+      }
+
+      alert(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -891,8 +926,8 @@ export default function ManagementPage({ onBack, onSignOut, onHome }: Management
     try {
       // Create order updates with new sort_order values
       const placeOrders = reorderedPlaces.map((place, index) => ({
-        id: parseInt(place.id),
-        sort_order: index + 1 // 1-based ordering
+        id: place.id,
+        sortOrder: index + 1 // 1-based ordering
       }));
 
       // Save to database
@@ -920,7 +955,7 @@ export default function ManagementPage({ onBack, onSignOut, onHome }: Management
     try {
       // Create order updates with new sortOrder values
       const categoryOrders = reorderedCategories.map((category, index) => ({
-        id: parseInt(category.id),
+        id: category.id,
         sortOrder: index + 1 // 1-based ordering
       }));
 
@@ -949,17 +984,17 @@ export default function ManagementPage({ onBack, onSignOut, onHome }: Management
 
         // Prepare old entity data
         const oldPlaceData: PlaceData = {
-          id: parseInt(editingPlace.id),
-          store_id: parseInt(editingPlace.storeNumber),
+          id: editingPlace.id,
+          storeId: editingPlace.storeNumber,
           name: editingPlace.name,
           color: getHexColor(editingPlace.color),
-          table_count: editingPlace.tableCount,
-          sort_order: editingPlace.sortOrder
+          tableCount: editingPlace.tableCount,
+          sortOrder: editingPlace.sortOrder
         };
 
         // Update place on server with integrated logging
         await placeServiceWithLogging.update(
-          parseInt(editingPlace.id),
+          editingPlace.id,
           {
             name,
             color: getHexColor(selectedColor) // Convert CSS variable to hex
@@ -1009,21 +1044,21 @@ export default function ManagementPage({ onBack, onSignOut, onHome }: Management
 
         // Prepare old entity data
         const oldTableData: TableData = {
-          id: parseInt(editingTable.id),
-          place_id: parseInt(editingTable.placeId),
-          store_id: parseInt(editingTable.storeNumber),
+          id: editingTable.id,
+          placeId: editingTable.placeId,
+          storeId: editingTable.storeNumber,
           name: editingTable.name,
           color: getHexColor(editingTable.color),
-          dining_capacity: editingTable.diningCapacity
+          diningCapacity: editingTable.diningCapacity
         };
 
         // Update table on server with integrated logging
         const updatedTable = await tableServiceWithLogging.update(
-          parseInt(editingTable.id),
+          editingTable.id,
           {
             name,
             color: selectedColor, // selectedColor is now the place's color (already hex)
-            place_id: placeId ? parseInt(placeId) : parseInt(editingTable.placeId)
+            placeId: placeId ? placeId : editingTable.placeId
           },
           oldTableData,
           {
@@ -1039,7 +1074,7 @@ export default function ManagementPage({ onBack, onSignOut, onHome }: Management
         setTimeout(async () => {
           // Reload tables from server to ensure UI is in sync
           if (selectedPlace) {
-            await loadTablesByPlace(parseInt(selectedPlace.id));
+            await loadTablesByPlace(selectedPlace.id);
           }
 
           // Exit edit mode
@@ -1065,17 +1100,17 @@ export default function ManagementPage({ onBack, onSignOut, onHome }: Management
 
         // Prepare old entity data
         const oldCategoryData: CategoryData = {
-          id: parseInt(editingCategory.id),
-          store_id: parseInt(editingCategory.storeNumber),
+          id: editingCategory.id,
+          storeId: editingCategory.storeNumber,
           name: editingCategory.name,
           color: getHexColor(editingCategory.color),
-          menu_count: editingCategory.menuCount,
-          sort_order: editingCategory.sortOrder
+          _count: { menus: editingCategory.menuCount },
+          sortOrder: editingCategory.sortOrder
         };
 
         // Update category on server with integrated logging
         await categoryServiceWithLogging.update(
-          parseInt(editingCategory.id),
+          editingCategory.id,
           {
             name,
             color: getHexColor(selectedColor) // Convert CSS variable to hex
@@ -1131,22 +1166,21 @@ export default function ManagementPage({ onBack, onSignOut, onHome }: Management
 
         // Prepare old entity data
         const oldMenuData: MenuData = {
-          id: parseInt(editingMenu.id),
-          category_id: parseInt(editingMenu.categoryId),
-          store_number: editingMenu.storeNumber,
+          id: editingMenu.id,
+          categoryId: editingMenu.categoryId,
+          storeId: editingMenu.storeNumber,
           name: editingMenu.name,
           price: parseInt(editingMenu.price || '0'),
           description: editingMenu.description,
-          user_pin: editingMenu.userPin,
-          sort_order: editingMenu.sortOrder
+          sortOrder: editingMenu.sortOrder
         };
 
         // Update menu on server with integrated logging
         const updatedMenuData = await menuServiceWithLogging.update(
-          parseInt(editingMenu.id),
+          editingMenu.id,
           {
             name,
-            category_id: parseInt(newCategoryId),
+            categoryId: newCategoryId,
             description,
             price: parseInt(price || '0')
           },
@@ -1159,15 +1193,15 @@ export default function ManagementPage({ onBack, onSignOut, onHome }: Management
 
         // Convert to local Menu interface
         const updatedMenu: Menu = {
-          id: updatedMenuData.id!.toString(),
-          categoryId: updatedMenuData.category_id.toString(),
+          id: updatedMenuData.id!,
+          categoryId: updatedMenuData.categoryId!,
           name: updatedMenuData.name,
           description: updatedMenuData.description,
-          price: updatedMenuData.price?.toString(),
-          storeNumber: updatedMenuData.store_number,
-          userPin: updatedMenuData.user_pin,
-          sortOrder: updatedMenuData.sort_order || 0,
-          createdAt: new Date(updatedMenuData.created_at!)
+          price: updatedMenuData.price?.toString() || '0',
+          storeNumber: updatedMenuData.storeId || '',
+          userPin: 'default',
+          sortOrder: updatedMenuData.sortOrder || 0,
+          createdAt: new Date(updatedMenuData.createdAt!)
         };
 
         // Start fade animation
@@ -1348,7 +1382,7 @@ export default function ManagementPage({ onBack, onSignOut, onHome }: Management
                       if (savedPlaces.length > 0) {
                         const firstPlace = savedPlaces[0];
                         setSelectedPlace(firstPlace);
-                        loadTablesByPlace(parseInt(firstPlace.id));
+                        loadTablesByPlace(firstPlace.id);
                       } else {
                         setSelectedPlace(null);
                       }
@@ -1358,7 +1392,7 @@ export default function ManagementPage({ onBack, onSignOut, onHome }: Management
                       if (savedCategories.length > 0) {
                         const firstCategory = savedCategories[0];
                         setSelectedCategory(firstCategory);
-                        loadMenusByCategory(parseInt(firstCategory.id));
+                        loadMenusByCategory(firstCategory.id);
                       } else {
                         setSelectedCategory(null);
                       }
@@ -1396,7 +1430,7 @@ export default function ManagementPage({ onBack, onSignOut, onHome }: Management
                       setEditingCategory(null);
 
                       setSelectedPlace(place);
-                      loadTablesByPlace(parseInt(place.id));
+                      loadTablesByPlace(place.id);
                     }
                   }}
                   onAddClick={handleAddButtonClick} // Enable add for tables
@@ -1421,7 +1455,7 @@ export default function ManagementPage({ onBack, onSignOut, onHome }: Management
                       setEditingCategory(null);
 
                       setSelectedCategory(category);
-                      loadMenusByCategory(parseInt(category.id));
+                      loadMenusByCategory(category.id);
                     }
                   }}
                   onAddClick={handleAddButtonClick} // Enable add for menus

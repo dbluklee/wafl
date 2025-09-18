@@ -10,6 +10,9 @@ router.use(authMiddleware);
 // 테이블 목록 조회
 router.get('/', tableController.getAll);
 
+// 장소별 테이블 조회
+router.get('/place/:placeId', tableController.getByPlace);
+
 // 테이블 상세 조회
 router.get('/:tableId', tableController.getById);
 

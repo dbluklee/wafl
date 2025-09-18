@@ -1,0 +1,21 @@
+{
+  "name": "@shared/types",
+  "version": "1.0.0",
+  "description": "Shared TypeScript types for WAFL POS System",
+  "main": "index.ts",
+  "types": "index.ts",
+  "scripts": {
+    "build": "echo 'TypeScript types module - no build needed'"
+  },
+  "keywords": [
+    "wafl",
+    "pos",
+    "types",
+    "typescript"
+  ],
+  "author": "WAFL Team",
+  "license": "MIT",
+  "devDependencies": {
+    "typescript": "^5.1.6"
+  }
+}

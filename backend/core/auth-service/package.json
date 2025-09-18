@@ -39,9 +39,9 @@
     "joi": "^17.9.2",
     "jsonwebtoken": "^9.0.2",
     "morgan": "^1.10.0",
-    "redis": "^4.6.8",
     "uuid": "^9.0.0",
-    "winston": "^3.10.0"
+    "winston": "^3.10.0",
+    "tsconfig-paths": "^4.2.0"
   },
   "devDependencies": {
     "@types/bcrypt": "^5.0.0",

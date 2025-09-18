@@ -360,6 +360,39 @@ export class AuthService {
     await sessionStore.delete(userId);
     await refreshTokenStore.delete(userId);
   }
+
+  // 프로필 조회
+  async getProfile(userId: string) {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      include: {
+        store: {
+          select: {
+            id: true,
+            name: true,
+            storeCode: true
+          }
+        }
+      }
+    });
+
+    if (!user || user.deletedAt) {
+      throw new Error('사용자를 찾을 수 없습니다.');
+    }
+
+    return {
+      userId: user.id,
+      storeId: user.storeId,
+      storeName: user.store.name,
+      storeCode: user.store.storeCode,
+      name: user.name,
+      phone: user.phone,
+      role: user.role,
+      isActive: !user.deletedAt,
+      lastLoginAt: user.lastLoginAt,
+      createdAt: user.createdAt
+    };
+  }
 }
 
 export const authService = new AuthService();

@@ -25,6 +25,23 @@ export class TableController {
     }
   }
 
+  async getByPlace(req: Request, res: Response, next: NextFunction) {
+    try {
+      const authReq = req as IAuthRequest;
+      const storeId = authReq.user!.storeId;
+      const { placeId } = req.params;
+
+      const tables = await tableService.getByPlace(storeId, placeId);
+
+      res.json({
+        success: true,
+        data: tables
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
   async getById(req: Request, res: Response, next: NextFunction) {
     try {
       const authReq = req as IAuthRequest;

@@ -40,6 +40,23 @@ export class MenuController {
     }
   }
 
+  async getByCategory(req: Request, res: Response, next: NextFunction) {
+    try {
+      const authReq = req as IAuthRequest;
+      const storeId = authReq.user!.storeId;
+      const { categoryId } = req.params;
+
+      const menus = await menuService.getByCategory(storeId, categoryId);
+
+      res.json({
+        success: true,
+        data: menus
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
   async getById(req: Request, res: Response, next: NextFunction) {
     try {
       const authReq = req as IAuthRequest;

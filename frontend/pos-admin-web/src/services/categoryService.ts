@@ -4,19 +4,22 @@ import { storeContextService } from './storeContextService';
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://112.148.37.41:4000';
 
 export interface CategoryData {
-  id?: number;
-  storeId: number;
+  id?: string;
+  storeId?: string;
   name: string;
   color: string;
-  menuCount: number;
   sortOrder?: number;
-  createdAt?: Date;
-  updatedAt?: Date;
+  isActive?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+  _count?: {
+    menus: number;
+  };
 }
 
 class CategoryService {
   // Categories API
-  async createCategory(category: Omit<CategoryData, 'id' | 'createdAt' | 'updatedAt' | 'storeId'>): Promise<CategoryData> {
+  async createCategory(category: Omit<CategoryData, 'id' | 'createdAt' | 'updatedAt' | 'storeId' | '_count'>): Promise<CategoryData> {
     const response = await storeContextService.fetchWithStoreContext(`${API_BASE_URL}/api/v1/store/categories`, {
       method: 'POST',
       body: category,
@@ -27,17 +30,19 @@ class CategoryService {
       throw new Error(error.message || 'Failed to create category');
     }
 
-    return response.json();
+    const result = await response.json();
+    return result.data || result; // Handle both wrapped and unwrapped responses
   }
 
   async getAllCategories(): Promise<CategoryData[]> {
-    const response = await storeContextService.fetchWithStoreContext(`${API_BASE_URL}/categories`);
+    const response = await storeContextService.fetchWithStoreContext(`${API_BASE_URL}/api/v1/store/categories`);
 
     if (!response.ok) {
       throw new Error('Failed to fetch categories');
     }
 
-    return response.json();
+    const result = await response.json();
+    return result.data || result; // Handle both wrapped and unwrapped responses
   }
 
   async getCategoriesByStore(storeId: number): Promise<CategoryData[]> {
@@ -52,19 +57,20 @@ class CategoryService {
     return response.json();
   }
 
-  async getCategoryById(id: number): Promise<CategoryData> {
-    const response = await storeContextService.fetchWithStoreContext(`${API_BASE_URL}/categories/${id}`);
+  async getCategoryById(id: string): Promise<CategoryData> {
+    const response = await storeContextService.fetchWithStoreContext(`${API_BASE_URL}/api/v1/store/categories/${id}`);
 
     if (!response.ok) {
       const error = await response.json();
       throw new Error(error.message || 'Failed to fetch category');
     }
 
-    return response.json();
+    const result = await response.json();
+    return result.data || result; // Handle both wrapped and unwrapped responses
   }
 
-  async updateCategory(id: number, updates: Partial<CategoryData>): Promise<CategoryData> {
-    const response = await storeContextService.fetchWithStoreContext(`${API_BASE_URL}/categories/${id}`, {
+  async updateCategory(id: string, updates: Partial<CategoryData>): Promise<CategoryData> {
+    const response = await storeContextService.fetchWithStoreContext(`${API_BASE_URL}/api/v1/store/categories/${id}`, {
       method: 'PUT',
       body: updates,
     });
@@ -74,11 +80,12 @@ class CategoryService {
       throw new Error(error.message || 'Failed to update category');
     }
 
-    return response.json();
+    const result = await response.json();
+    return result.data || result; // Handle both wrapped and unwrapped responses
   }
 
-  async deleteCategory(id: number): Promise<void> {
-    const response = await storeContextService.fetchWithStoreContext(`${API_BASE_URL}/categories/${id}`, {
+  async deleteCategory(id: string): Promise<void> {
+    const response = await storeContextService.fetchWithStoreContext(`${API_BASE_URL}/api/v1/store/categories/${id}`, {
       method: 'DELETE',
     });
 

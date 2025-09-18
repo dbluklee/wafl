@@ -16,7 +16,28 @@ const api: AxiosInstance = axios.create({
 // Request interceptor - Add auth token
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('accessToken');
+    // Try to get token from auth-storage first
+    let token = null;
+    try {
+      const authStorage = localStorage.getItem('auth-storage');
+      if (authStorage) {
+        const parsed = JSON.parse(authStorage);
+        token = parsed.state?.accessToken;
+      }
+    } catch (e) {
+      // Fallback to direct accessToken
+      token = localStorage.getItem('accessToken');
+    }
+
+    // Debug logging
+    console.log('🔍 Axios Request Interceptor:', {
+      url: config.url,
+      method: config.method?.toUpperCase(),
+      hasToken: !!token,
+      tokenPrefix: token ? token.substring(0, 20) + '...' : 'none',
+      body: config.data ? 'present' : 'none'
+    });
+
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -36,8 +57,11 @@ api.interceptors.response.use(
   async (error: AxiosError) => {
     const originalRequest = error.config as any;
 
-    // Handle 401 Unauthorized
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    // Handle 401 Unauthorized (but not on public pages)
+    const currentPath = window.location.pathname;
+    const publicPaths = ['/welcome', '/signin', '/signup'];
+
+    if (error.response?.status === 401 && !originalRequest._retry && !publicPaths.includes(currentPath)) {
       originalRequest._retry = true;
 
       try {
@@ -63,13 +87,19 @@ api.interceptors.response.use(
       } catch (refreshError) {
         console.error('Token refresh failed:', refreshError);
 
-        // Clear tokens and redirect to login
+        // Clear tokens
         localStorage.removeItem('accessToken');
         localStorage.removeItem('refreshToken');
         localStorage.removeItem('user');
         localStorage.removeItem('store');
 
-        window.location.href = '/login';
+        // Only redirect if not on public pages
+        const currentPath = window.location.pathname;
+        const publicPaths = ['/welcome', '/signin', '/signup'];
+        if (!publicPaths.includes(currentPath)) {
+          window.location.href = '/welcome';
+        }
+
         return Promise.reject(refreshError);
       }
     }

@@ -158,11 +158,7 @@ export interface IConfig {
     port: number;
     path: string;
   };
-  redis: {
-    host: string;
-    port: number;
-    password?: string;
-  };
+  // Redis configuration removed - using in-memory store
   logging: {
     level: string;
     format: string;

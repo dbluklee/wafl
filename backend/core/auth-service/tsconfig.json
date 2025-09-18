@@ -4,8 +4,11 @@
     "outDir": "./dist",
     "rootDir": "./src",
     "baseUrl": "./src",
+    "downlevelIteration": true,
     "paths": {
-      "@shared/*": ["../../shared/*/src"]
+      "@shared/database": ["../../shared/database/src"],
+      "@shared/types": ["../../shared/types"],
+      "@shared/utils": ["../../shared/utils"]
     }
   },
   "include": ["src/**/*"],

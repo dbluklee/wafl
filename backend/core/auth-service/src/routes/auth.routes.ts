@@ -38,4 +38,7 @@ router.post('/refresh', authController.refreshToken);
 // 로그아웃 (인증 필요)
 router.post('/logout', authMiddleware, authController.logout);
 
+// 프로필 조회 (인증 필요)
+router.get('/profile', authMiddleware, authController.getProfile);
+
 export default router;

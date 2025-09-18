@@ -20,37 +20,40 @@ export const createServiceProxy = (routeConfig: IRouteConfig): any => {
     target: serviceConfig.url,
     changeOrigin: true,
     pathRewrite: (path: string, req: any) => {
-      console.log(`[PATHREWRITE] Original path: ${path}`);
+      // Remove excessive logging for performance
       return path;
     },
-    timeout: 30000, // Reduced to reasonable timeout
-    proxyTimeout: 35000,
+    timeout: 5000, // Reduced timeout for faster failure
+    proxyTimeout: 6000,
 
     // Fix for body parsing issues
     selfHandleResponse: false,
     xfwd: true,
     secure: false,
+    followRedirects: false, // Prevent redirect loops
 
     onProxyReq: (proxyReq: any, req: any, res: any) => {
       console.log(`[PROXY] ${req.method} ${req.originalUrl} -> ${serviceConfig.url}${proxyReq.path}`);
 
-      // Add custom headers for downstream services
+      // 기본 헤더 설정
       proxyReq.setHeader('X-Gateway-Request-ID', req.requestId);
       proxyReq.setHeader('X-Gateway-Timestamp', new Date().toISOString());
       proxyReq.setHeader('X-Service-Name', routeConfig.target);
 
-      // Forward user context if available
+      // 사용자 컨텍스트 전달
       if (req.user) {
         proxyReq.setHeader('X-User-ID', req.user.userId);
         proxyReq.setHeader('X-Store-ID', req.user.storeId);
         proxyReq.setHeader('X-User-Role', req.user.role);
-
         if (req.user.sessionId) {
           proxyReq.setHeader('X-Session-ID', req.user.sessionId);
         }
+        console.log(`[PROXY AUTH] User context: ${req.user.userId}, Role: ${req.user.role}, Store: ${req.user.storeId}`);
+      } else {
+        console.log(`[PROXY AUTH] No user context found for ${req.originalUrl}`);
       }
 
-      // Fix body forwarding issue - rewrite body if already parsed
+      // 🔧 핵심 해결책: 파싱된 body 재작성
       if (req.body && Object.keys(req.body).length > 0) {
         const bodyData = JSON.stringify(req.body);
         proxyReq.setHeader('Content-Type', 'application/json');
@@ -58,16 +61,19 @@ export const createServiceProxy = (routeConfig: IRouteConfig): any => {
         proxyReq.write(bodyData);
         console.log(`[PROXY BODY] Forwarding parsed body: ${bodyData}`);
       }
+
+      // Authorization 헤더 전달 확인
+      if (req.headers.authorization) {
+        console.log(`[PROXY AUTH] Authorization header present: ${req.headers.authorization.substring(0, 20)}...`);
+      } else {
+        console.log(`[PROXY AUTH] No Authorization header found`);
+      }
     },
 
     onProxyRes: (proxyRes: any, req: any, res: any) => {
-      // Add response headers
+      // Add minimal response headers
       proxyRes.headers['x-gateway-request-id'] = req.requestId;
-      proxyRes.headers['x-proxied-by'] = 'api-gateway';
-
-      // Log proxy response
-      const responseTime = Date.now() - req.startTime;
-      console.log(`[PROXY] ${req.method} ${req.originalUrl} <- ${proxyRes.statusCode} (${responseTime}ms)`);
+      // Remove verbose logging for performance
     },
 
     onError: (err: any, req: any, res: any) => {
@@ -111,12 +117,11 @@ export const createServiceProxy = (routeConfig: IRouteConfig): any => {
     },
 
     // Health check filter
-    logLevel: 'warn', // Reduce logs for production
+    logLevel: 'silent', // Reduce logs for performance
 
     // Custom router for dynamic routing
     router: (req: Request) => {
       // Always route to the service URL - let the service handle its own health
-      console.log(`[ROUTER] Routing ${req.method} ${req.url} to ${serviceConfig.url}`);
       return serviceConfig.url;
     },
   };

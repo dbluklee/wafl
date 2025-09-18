@@ -1,6 +1,4 @@
-import { PrismaClient } from '../../../../../node_modules/@prisma/client';
-
-const prisma = new PrismaClient();
+import { prisma } from '@shared/database';
 
 interface CreateStaffData {
   storeId: string;
@@ -40,7 +38,7 @@ export class StaffService {
         }
       });
 
-      return staffList.map(staff => ({
+      return staffList.map((staff: any) => ({
         ...staff,
         isActive: !staff.deletedAt
       }));

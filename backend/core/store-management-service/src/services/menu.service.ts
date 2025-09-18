@@ -66,6 +66,31 @@ export class MenuService {
     };
   }
 
+  async getByCategory(storeId: string, categoryId: string): Promise<Menu[]> {
+    // 캐시 확인
+    const cacheKey = `category_${categoryId}`;
+    const cached = await cacheManager.get<Menu[]>(storeId, 'menu', cacheKey);
+    if (cached) return cached;
+
+    const menus = await prisma.menu.findMany({
+      where: {
+        storeId,
+        categoryId
+      },
+      orderBy: {
+        sortOrder: 'asc'
+      },
+      include: {
+        category: true
+      }
+    });
+
+    // 캐시 저장 (30초)
+    await cacheManager.set(storeId, 'menu', menus, cacheKey, 30);
+
+    return menus;
+  }
+
   async getById(storeId: string, menuId: string): Promise<Menu | null> {
     // 캐시 확인
     const cached = await cacheManager.get<Menu>(storeId, 'menu', menuId);
