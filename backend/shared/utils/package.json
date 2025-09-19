@@ -5,7 +5,8 @@
   "main": "index.ts",
   "types": "index.ts",
   "scripts": {
-    "build": "echo 'Utility functions module - no build needed'"
+    "build": "echo 'Utility functions module - no build needed'",
+    "test": "echo 'Utility functions module - no tests needed'"
   },
   "keywords": [
     "wafl",

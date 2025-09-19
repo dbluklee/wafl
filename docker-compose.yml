@@ -1,0 +1,101 @@
+services:
+  # Database
+  postgres:
+    image: postgres:15
+    container_name: wafl-postgres
+    environment:
+      POSTGRES_DB: waflpos
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5200:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Auth Service
+  auth-service:
+    build:
+      context: .
+      dockerfile: ./backend/core/auth-service/Dockerfile
+    container_name: wafl-auth-service
+    ports:
+      - "4001:4001"
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://postgres:password@postgres:5432/waflpos
+      - JWT_SECRET=your-super-secret-jwt-key-here-make-it-long-and-random
+      - JWT_EXPIRES_IN=24h
+      - JWT_REFRESH_EXPIRES_IN=7d
+      - CORS_ORIGIN=http://localhost:4100,http://112.148.37.41:4100
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # Store Management Service
+  store-management-service:
+    build:
+      context: .
+      dockerfile: ./backend/core/store-management-service/Dockerfile
+    container_name: wafl-store-management-service
+    ports:
+      - "4002:4002"
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://postgres:password@postgres:5432/waflpos
+      - JWT_SECRET=your-super-secret-jwt-key-here-make-it-long-and-random
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # API Gateway
+  api-gateway:
+    build:
+      context: .
+      dockerfile: ./backend/support/api-gateway/Dockerfile
+    container_name: wafl-api-gateway
+    ports:
+      - "4000:4000"
+    environment:
+      - NODE_ENV=production
+      - AUTH_SERVICE_URL=http://auth-service:4001
+      - STORE_MANAGEMENT_SERVICE_URL=http://store-management-service:4002
+      - DASHBOARD_SERVICE_URL=http://dashboard-service:4003
+      - ORDER_SERVICE_URL=http://order-service:4004
+      - PAYMENT_SERVICE_URL=http://payment-service:4005
+      - AI_SERVICE_URL=http://ai-service:4006
+      - USER_PROFILE_SERVICE_URL=http://user-profile-service:4009
+      - HISTORY_SERVICE_URL=http://history-service:4010
+      - CORS_ORIGIN=http://localhost:4100,http://112.148.37.41:4100
+    depends_on:
+      - auth-service
+      - store-management-service
+    restart: unless-stopped
+
+  # Frontend
+  pos-admin-web:
+    build:
+      context: .
+      dockerfile: ./frontend/pos-admin-web/Dockerfile
+    container_name: wafl-pos-admin-web
+    ports:
+      - "4100:80"
+    environment:
+      - VITE_API_BASE_URL=http://112.148.37.41:4000
+      - VITE_WS_URL=ws://112.148.37.41:4000
+    depends_on:
+      - api-gateway
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+
+networks:
+  default:
+    driver: bridge

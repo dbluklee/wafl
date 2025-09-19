@@ -1,0 +1,45 @@
+services:
+  # Database
+  postgres:
+    image: postgres:15
+    container_name: wafl-postgres
+    environment:
+      POSTGRES_DB: aipos
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: Cl!Wm@Dp!Dl@Em!
+    ports:
+      - "5200:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Auth Service
+  auth-service:
+    build:
+      context: .
+      dockerfile: ./backend/core/auth-service/Dockerfile
+    container_name: wafl-auth-service
+    ports:
+      - "4001:4001"
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://postgres:Cl!Wm@Dp!Dl@Em!@postgres:5432/aipos
+      - JWT_SECRET=your-super-secret-jwt-key-here-make-it-long-and-random
+      - JWT_EXPIRES_IN=24h
+      - JWT_REFRESH_EXPIRES_IN=7d
+      - CORS_ORIGIN=http://localhost:4100,http://112.148.37.41:4100
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+
+networks:
+  default:
+    driver: bridge

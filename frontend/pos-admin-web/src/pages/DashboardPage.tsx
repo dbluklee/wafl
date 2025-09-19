@@ -1,450 +1,1605 @@
-import React, { useState, useEffect } from 'react';
-import { useAuthStore } from '@/stores/authStore';
-import { DESIGN_TOKENS } from '../types/design-tokens';
-import { API_ENDPOINTS } from '@/utils/constants';
-import api from '@/utils/axios';
+import React from 'react'; // Dashboard Page Component
+import ButtonComp from '../components/ButtonComp';
+import ButtonAddComp from '../components/ButtonAddComp';
+import Noti from '../components/NotiComp';
+import PanelContent from '../components/PanelContentComp';
+import PanelHeaderComp from '../components/PanelHeaderComp';
+import CardGrid from '../components/CardGridComp';
+import ManagementItemsComp from '../components/ManagementItemsComp';
+import ManagementSubItemsComp from '../components/ManagementSubItemsComp';
+import { tableColors, getHexColor, getCSSVariable } from '../components/InputColorComp';
+import { useLogging } from '../hooks/useLogging';
+import SyncStatus from '../components/SyncStatus';
+import { useAuthStore } from '../stores/authStore';
+import {
+  placeServiceWithLogging,
+  tableServiceWithLogging,
+  categoryServiceWithLogging,
+  menuServiceWithLogging,
+  placeService,
+  tableService,
+  categoryService,
+  menuService
+} from '../services/crudService';
+import type { PlaceData } from '../services/placeService';
+import type { TableData } from '../services/tableService';
+import type { CategoryData } from '../services/categoryService';
+import type { MenuData } from '../services/menuService';
 
-interface DashboardStats {
-  totalSales: number;
-  totalOrders: number;
-  activeOrders: number;
-  activeTables: number;
-  completedOrders: number;
-  averageOrderValue: number;
-  peakHour: string;
-  popularItems?: Array<{
-    name: string;
-    count: number;
-  }>;
+// Icon components as SVG strings (from Figma assets)
+const homeIconSvg = `data:image/svg+xml,<svg width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M10 28L40 8L70 28V68C70 69.1046 69.1046 70 68 70H12C10.8954 70 10 69.1046 10 68V28Z" stroke="%23E0E0E0" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><path d="M30 70V40H50V70" stroke="%23E0E0E0" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+
+const plusIconSvg = `data:image/svg+xml,<svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M20 10V30M10 20H30" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+
+const undoIconSvg = `data:image/svg+xml,<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M9 14L4 9L9 4" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M20 20V13A4 4 0 0 0 16 9H4" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+
+interface DashboardPageProps {
+  onBack?: () => void;
+  onSignOut?: () => void;
+  onHome?: () => void;
 }
 
-interface OrderSummary {
+
+
+interface Place {
   id: string;
-  tableNumber: number;
-  items: number;
-  total: number;
-  status: 'pending' | 'preparing' | 'ready' | 'completed';
-  createdAt: string;
+  storeNumber: string;
+  name: string;
+  color: string;
+  tableCount: number;
+  userPin: string;
+  sortOrder: number;
+  createdAt: Date;
 }
 
-interface POSLog {
+interface Table {
   id: string;
-  action: string;
-  description: string;
-  userId: string;
-  userName: string;
-  timestamp: string;
-  metadata?: any;
+  placeId: string;
+  name: string;
+  color: string;
+  positionX: number;
+  positionY: number;
+  diningCapacity: number;
+  storeNumber: string;
+  userPin: string;
+  createdAt: Date;
 }
 
-interface TableStatus {
-  tableNumber: number;
-  status: 'available' | 'occupied' | 'reserved';
-  currentOrder?: string;
-  occupiedSince?: string;
+interface Category {
+  id: string;
+  storeNumber: string;
+  name: string;
+  color: string;
+  menuCount: number;
+  userPin: string;
+  sortOrder: number;
+  createdAt: Date;
 }
 
-const DashboardPage: React.FC = () => {
-  const { colors } = DESIGN_TOKENS;
-  const { user, store } = useAuthStore();
-  const [stats, setStats] = useState<DashboardStats | null>(null);
-  const [recentOrders, setRecentOrders] = useState<OrderSummary[]>([]);
-  const [posLogs, setPosLogs] = useState<POSLog[]>([]);
-  const [tables, setTables] = useState<TableStatus[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
+interface Menu {
+  id: string;
+  categoryId: string;
+  name: string;
+  description?: string;
+  price?: string;
+  storeNumber: string;
+  userPin: string;
+  sortOrder: number;
+  createdAt: Date;
+}
 
-  const fetchDashboardData = async () => {
+export default function DashboardPage({ onBack, onSignOut, onHome }: DashboardPageProps) {
+  const [selectedTab, setSelectedTab] = React.useState('Dashboard');
+  const [isAddMode, setIsAddMode] = React.useState(false);
+  const [cardsTransitioning, setCardsTransitioning] = React.useState(false);
+  const [animatingCardId, setAnimatingCardId] = React.useState<string | null>(null);
+  const [tabTransitioning, setTabTransitioning] = React.useState(false);
+  const [loading, setLoading] = React.useState(false);
+
+  // Auth store 사용
+  const { user, store, isAuthenticated, accessToken } = useAuthStore();
+
+  // Card editing mode state
+  const [isCardEditMode, setIsCardEditMode] = React.useState(false);
+  const [editingPlace, setEditingPlace] = React.useState<Place | null>(null);
+  const [editingTable, setEditingTable] = React.useState<Table | null>(null);
+  const [editingCategory, setEditingCategory] = React.useState<Category | null>(null);
+  const [editingMenu, setEditingMenu] = React.useState<Menu | null>(null);
+
+  // Use the logging system
+  const {
+    logs,
+    isLoading: logsLoading,
+    undoLog,
+    logCustomerArrival,
+    logUserSignIn,
+    forceSyncNow,
+    syncStatus,
+    refreshPlacesData
+  } = useLogging();
+
+  const [savedPlaces, setSavedPlaces] = React.useState<Place[]>([]);
+  const [savedTables, setSavedTables] = React.useState<Table[]>([]);
+  const [savedCategories, setSavedCategories] = React.useState<Category[]>([]);
+  const [savedMenus, setSavedMenus] = React.useState<Menu[]>([]);
+
+  // Table management specific states
+  const [selectedPlace, setSelectedPlace] = React.useState<Place | null>(null);
+
+  // Menu management specific states
+  const [selectedCategory, setSelectedCategory] = React.useState<Category | null>(null);
+
+  // Load places from the server
+  const loadPlaces = React.useCallback(async () => {
     try {
       setLoading(true);
-      setError(null);
+      const placesData = await placeService.getAllPlaces();
+      const mappedPlaces = placesData.map((p: PlaceData) => ({
+        id: p.id!.toString(),
+        storeNumber: p.store_number,
+        name: p.name,
+        color: p.color,
+        tableCount: p.table_count,
+        userPin: p.user_pin,
+        sortOrder: p.sort_order || 0,
+        createdAt: new Date(p.created_at!)
+      }));
+      setSavedPlaces(mappedPlaces);
+    } catch (error) {
+      console.error('Failed to load places:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
-      // 대시보드 통계 가져오기
-      const statsResponse = await api.get(API_ENDPOINTS.DASHBOARD_STATS);
-      setStats(statsResponse.data.data);
+  // Load tables from the server
+  const loadTables = React.useCallback(async () => {
+    try {
+      setLoading(true);
+      const tablesData = await tableService.getAllTables();
+      const mappedTables = tablesData.map((t: any) => ({
+        id: t.id.toString(),
+        placeId: t.placeId,
+        name: t.name,
+        color: t.place?.color || '#28a745', // Use place color or default
+        positionX: 0,
+        positionY: 0,
+        diningCapacity: t.capacity || 4,
+        storeNumber: t.storeId || '',
+        userPin: '',
+        createdAt: new Date(t.createdAt || Date.now())
+      }));
+      setSavedTables(mappedTables);
+    } catch (error) {
+      console.error('Failed to load tables:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
-      // POS 로그 가져오기
-      const logsResponse = await api.get(`${API_ENDPOINTS.POS_LOGS}?limit=10`);
-      setPosLogs(logsResponse.data.data);
+  // Load tables for a specific place
+  const loadTablesByPlace = React.useCallback(async (placeId: string) => {
+    try {
+      setLoading(true);
+      const tablesData = await tableService.getTablesByPlace(placeId);
+      const mappedTables = tablesData.map((t: any) => ({
+        id: t.id.toString(),
+        placeId: t.placeId,
+        name: t.name,
+        color: t.place?.color || '#28a745', // Use place color or default
+        positionX: 0,
+        positionY: 0,
+        diningCapacity: t.capacity || 4,
+        storeNumber: t.storeId || '',
+        userPin: '',
+        createdAt: new Date(t.createdAt || Date.now())
+      }));
+      setSavedTables(mappedTables);
+    } catch (error) {
+      console.error('Failed to load tables:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
-      // 최근 주문 가져오기 (기존 API 유지)
+  // Load categories from the server
+  const loadCategories = React.useCallback(async () => {
+    try {
+      setLoading(true);
+      const categoriesData = await categoryService.getAllCategories();
+      const mappedCategories = categoriesData.map((c: CategoryData) => ({
+        id: c.id!.toString(),
+        storeNumber: c.storeId || '1001',
+        name: c.name,
+        color: c.color,
+        menuCount: c._count?.menus || 0,
+        userPin: user?.id || '01HZ1234-5678-9012-3456-789012345679',
+        sortOrder: c.sortOrder || 0,
+        createdAt: new Date(c.createdAt!)
+      }));
+      setSavedCategories(mappedCategories);
+    } catch (error) {
+      console.error('Failed to load categories:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, [user]);
+
+  // Load menus for a specific category
+  const loadMenusByCategory = React.useCallback(async (categoryId: number) => {
+    try {
+      setLoading(true);
+      const menusData = await menuService.getMenusByCategory(categoryId);
+      const mappedMenus = menusData.map((m: MenuData) => ({
+        id: m.id!.toString(),
+        categoryId: m.categoryId?.toString() || '',
+        name: m.name,
+        description: m.description,
+        price: m.price?.toString() || '0',
+        storeNumber: m.storeId || '',
+        userPin: 'default',
+        sortOrder: m.sortOrder || 0,
+        createdAt: new Date(m.createdAt!)
+      }));
+      setSavedMenus(mappedMenus);
+    } catch (error) {
+      console.error('Failed to load menus:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Load places and categories from the server on component mount
+  React.useEffect(() => {
+    loadPlaces();
+    loadCategories();
+  }, [loadPlaces, loadCategories]);
+
+  // Auto-select first place when places are loaded and we're on Table tab
+  React.useEffect(() => {
+    if (selectedTab === 'Table' && savedPlaces.length > 0 && !selectedPlace) {
+      const firstPlace = savedPlaces[0];
+      setSelectedPlace(firstPlace);
+      loadTablesByPlace(firstPlace.id);
+    }
+  }, [savedPlaces, selectedTab]);
+
+  // Auto-select first category when categories are loaded and we're on Menu tab
+  React.useEffect(() => {
+    if (selectedTab === 'Menu' && savedCategories.length > 0 && !selectedCategory) {
+      const firstCategory = savedCategories[0];
+      setSelectedCategory(firstCategory);
+    }
+  }, [savedCategories, selectedTab]);
+
+  // Load menus when selectedCategory changes
+  React.useEffect(() => {
+    if (selectedCategory) {
+      loadMenusByCategory(selectedCategory.id);
+    }
+  }, [selectedCategory, loadMenusByCategory]);
+
+  // Function to get appropriate notification message based on selected tab
+  const getNotiMessage = (tab: string) => {
+    switch (tab.toLowerCase()) {
+      case 'place':
+        return {
+          title: 'There are no places at all.',
+          description: 'Press the + on the top right to add one!!'
+        };
+      case 'table':
+        return {
+          title: 'There are no tables at all.',
+          description: 'Press the + on the top right to add one!!'
+        };
+      case 'category':
+        return {
+          title: 'There are no categories at all.',
+          description: 'Press the + on the top right to add one!!'
+        };
+      case 'menu':
+        return {
+          title: 'There are no menus at all.',
+          description: 'Press the + on the top right to add one!!'
+        };
+      default:
+        return {
+          title: 'There are no items at all.',
+          description: 'Press the + on the top right to add one!!'
+        };
+    }
+  };
+
+  // Helper function to check if a log has been undone
+  const getUndoneLogIds = async () => {
+    const undoneIds = new Set<number>();
+
+    // First, check local logs (from IndexedDB)
+    const localUndoLogs = logs.filter(log => log.eventId === 'UNDO_PERFORMED');
+    console.log('🔍 Debug local UNDO_PERFORMED logs:', localUndoLogs);
+
+    localUndoLogs.forEach(undoLog => {
       try {
-        const ordersResponse = await api.get('/api/v1/dashboard/recent-orders?limit=10');
-        setRecentOrders(ordersResponse.data.data);
-      } catch (orderError) {
-        console.warn('Recent orders API not available:', orderError);
-        setRecentOrders([]);
+        const metadata = undoLog.additionalData;
+        console.log('🔍 Processing local undo log:', { id: undoLog.id, serverId: undoLog.serverId, metadata });
+        if (metadata?.originalLogId) {
+          undoneIds.add(metadata.originalLogId);
+        }
+      } catch (error) {
+        console.warn('Failed to parse local undo log metadata:', error);
+      }
+    });
+
+    // Also check backend logs (from PostgreSQL)
+    try {
+      const placeServiceInstance = (await import('../services/placeService')).placeService;
+      const backendLogs = await placeServiceInstance.getAllLogs(100); // Get recent backend logs
+
+      const backendUndoLogs = backendLogs.filter(log => log.type === 'UNDO_PERFORMED');
+
+      backendUndoLogs.forEach(undoLog => {
+        try {
+          // Backend stores metadata as JSON string
+          const metadata = undoLog.metadata ? JSON.parse(undoLog.metadata) : {};
+          if (metadata?.originalLogId) {
+            undoneIds.add(metadata.originalLogId);
+          }
+        } catch (error) {
+          console.warn('Failed to parse backend undo log metadata:', error);
+        }
+      });
+    } catch (error) {
+      console.warn('Failed to fetch backend logs:', error);
+    }
+
+    return undoneIds;
+  };
+
+  const [undoneLogIds, setUndoneLogIds] = React.useState<Set<number>>(new Set());
+
+  // Load undone log IDs on mount only - not when logs change to avoid infinite loops
+  React.useEffect(() => {
+    getUndoneLogIds().then(setUndoneLogIds);
+  }, []); // Empty dependency array - only run once on mount
+
+  // Refresh undone log IDs after undo operations
+  const refreshUndoneLogIds = async () => {
+    const updatedUndoneLogIds = await getUndoneLogIds();
+    setUndoneLogIds(updatedUndoneLogIds);
+  };
+
+  // Convert database logs to the format expected by the Log component
+  const logEntries = logs.map(log => {
+    const isUndone = undoneLogIds.has(log.serverId || log.id!);
+
+    return {
+      id: log.id!,
+      serverId: log.serverId, // Add server ID for undo operations
+      time: log.timeFormatted,
+      message: log.text,
+      type: log.eventId,
+      isUndone: isUndone // Mark if this log has been undone
+    };
+  });
+
+  const handleLogUndo = async (logId: number) => {
+    // Find the log entry to get the server ID
+    const logEntry = logEntries.find(entry => entry.id === logId);
+    const undoId = logEntry?.serverId || logId; // Use serverId if available, otherwise fallback to local ID
+
+    const success = await undoLog(undoId);
+
+    if (success) {
+      // Refresh data to reflect the undo changes
+      await loadPlaces();
+      await refreshPlacesData();
+      await loadCategories();
+      // Refresh tables if a place is selected
+      if (selectedPlace) {
+        await loadTablesByPlace(selectedPlace.id);
+      }
+      // Refresh menus if a category is selected
+      if (selectedCategory) {
+        await loadMenusByCategory(selectedCategory.id);
+      }
+      // Refresh undone log IDs to update the UI
+      await refreshUndoneLogIds();
+    }
+  };
+
+  const handleAddButtonClick = () => {
+    setIsAddMode(true);
+  };
+
+  const handleSave = async (name: string, selectedColor: string, storeNumber?: string, userPin?: string, placeId?: string, description?: string, price?: string, diningCapacity?: number) => {
+    // Check authentication using authStore
+    if (!isAuthenticated || !user || !store || !accessToken) {
+      const itemType = selectedTab.toLowerCase();
+      alert(`Please sign in to create a ${itemType}.`);
+      return;
+    }
+
+    const currentStoreNumber = storeNumber || store.code;
+    const currentUserPin = userPin || user.id;
+
+    console.log('Saving:', { name, selectedColor, storeNumber: currentStoreNumber, userPin: currentUserPin });
+
+    if (selectedTab === 'Place') {
+      try {
+        setLoading(true);
+
+        // Create place on server with integrated logging
+        const newPlaceData = await placeServiceWithLogging.create({
+          name,
+          color: getHexColor(selectedColor), // Convert CSS variable to hex
+          table_count: 0,
+        });
+
+        // Convert to local Place interface
+        const newPlace: Place = {
+          id: newPlaceData.id!.toString(),
+          storeNumber: newPlaceData.store_id.toString(),
+          name: newPlaceData.name,
+          color: getCSSVariable(newPlaceData.color), // Convert hex back to CSS variable
+          tableCount: newPlaceData.table_count,
+          userPin: currentUserPin,
+          sortOrder: newPlaceData.sort_order || 0,
+          createdAt: new Date(newPlaceData.created_at!)
+        };
+
+        // Start fade animation
+        setCardsTransitioning(true);
+        setAnimatingCardId(newPlace.id);
+
+        // Fade out current cards
+        setTimeout(() => {
+          // Add the new place
+          setSavedPlaces(prev => [...prev, newPlace]);
+          setIsAddMode(false);
+
+          // Fade in with new card
+          setTimeout(() => {
+            setCardsTransitioning(false);
+            // Keep the animation ID for a bit longer to show the highlight
+            setTimeout(() => {
+              setAnimatingCardId(null);
+            }, 500);
+          }, 25);
+        }, 150);
+
+        // Refresh places data in logging service for ItemComp processing
+        await refreshPlacesData();
+
+      } catch (error) {
+        console.error('❌ Failed to create place:', error);
+        alert('Failed to create place. Please try again.');
+      } finally {
+        setLoading(false);
+      }
+    } else if (selectedTab === 'Table') {
+      if (!placeId) {
+        alert('Please select a place first to add a table.');
+        return;
       }
 
-      // 테이블 상태 가져오기 (기존 API 유지)
       try {
-        const tablesResponse = await api.get('/api/v1/dashboard/table-status');
-        setTables(tablesResponse.data.data);
-      } catch (tableError) {
-        console.warn('Table status API not available:', tableError);
-        setTables([]);
+        setLoading(true);
+
+        // Get place name for logging
+        const selectedPlace = savedPlaces.find(p => p.id === placeId);
+
+        // Create table on server with integrated logging
+        const newTableData = await tableServiceWithLogging.create({
+          placeId: placeId,
+          name,
+          color: selectedColor, // selectedColor is now the place's color (already hex)
+          diningCapacity: diningCapacity || 4, // Default to 4 if not provided
+        }, { placeName: selectedPlace?.name });
+
+        // Convert to local Table interface
+        const newTable: Table = {
+          id: newTableData.id.toString(),
+          placeId: newTableData.placeId,
+          name: newTableData.name,
+          color: selectedColor, // Use the selected color
+          positionX: 0,
+          positionY: 0,
+          diningCapacity: newTableData.capacity || 4,
+          storeNumber: newTableData.storeId || '',
+          userPin: currentUserPin,
+          createdAt: new Date(newTableData.createdAt || Date.now())
+        };
+
+        // Start fade animation
+        setCardsTransitioning(true);
+        setAnimatingCardId(newTable.id);
+
+        // Fade out current cards
+        setTimeout(async () => {
+          // Reload tables from server to ensure UI is in sync
+          if (selectedPlace) {
+            await loadTablesByPlace(selectedPlace.id);
+          }
+          setIsAddMode(false);
+
+          // Fade in with new card
+          setTimeout(() => {
+            setCardsTransitioning(false);
+            // Keep the animation ID for a bit longer to show the highlight
+            setTimeout(() => {
+              setAnimatingCardId(null);
+            }, 500);
+          }, 25);
+        }, 150);
+
+      } catch (error) {
+        console.error('❌ Failed to create table:', error);
+        alert('Failed to create table. Please try again.');
+      } finally {
+        setLoading(false);
+      }
+    } else if (selectedTab === 'Category') {
+      try {
+        setLoading(true);
+
+        // Calculate next sortOrder (highest current sortOrder + 1, or 1 if no categories)
+        const nextSortOrder = savedCategories.length > 0
+          ? Math.max(...savedCategories.map(c => c.sortOrder)) + 1
+          : 1;
+
+        // Create category on server with integrated logging
+        console.log('🔄 Creating category with auth check:', {
+          isAuthenticated,
+          accessToken: accessToken ? accessToken.substring(0, 50) + '...' : null,
+          user: user?.id,
+          store: store?.id
+        });
+
+        const newCategoryData = await categoryServiceWithLogging.create({
+          name,
+          color: getHexColor(selectedColor), // Convert CSS variable to hex
+          sortOrder: nextSortOrder,
+        });
+
+        // Convert to local Category interface
+        const newCategory: Category = {
+          id: newCategoryData.id!.toString(),
+          storeNumber: newCategoryData.storeId!.toString(),
+          name: newCategoryData.name,
+          color: getCSSVariable(newCategoryData.color), // Convert hex back to CSS variable
+          menuCount: newCategoryData._count?.menus || 0,
+          userPin: currentUserPin,
+          sortOrder: newCategoryData.sortOrder || 0,
+          createdAt: new Date(newCategoryData.createdAt!)
+        };
+
+        // Start fade animation
+        setCardsTransitioning(true);
+        setAnimatingCardId(newCategory.id);
+
+        // Fade out current cards
+        setTimeout(() => {
+          // Add the new category
+          setSavedCategories(prev => [...prev, newCategory]);
+          setIsAddMode(false);
+
+          // Fade in with new card
+          setTimeout(() => {
+            setCardsTransitioning(false);
+            // Keep the animation ID for a bit longer to show the highlight
+            setTimeout(() => {
+              setAnimatingCardId(null);
+            }, 500);
+          }, 25);
+        }, 150);
+
+      } catch (error) {
+        console.error('❌ Failed to create category:', error);
+        alert('Failed to create category. Please try again.');
+      } finally {
+        setLoading(false);
+      }
+    } else if (selectedTab === 'Menu') {
+      if (!selectedCategory) {
+        alert('Please select a category first to add a menu.');
+        return;
       }
 
-      setLastUpdated(new Date());
-    } catch (error: any) {
-      console.error('Dashboard data fetch error:', error);
-      setError(error.response?.data?.message || '대시보드 데이터를 불러오는데 실패했습니다.');
+      try {
+        setLoading(true);
+
+        // Create menu on server with integrated logging
+        const newMenuData = await menuServiceWithLogging.create({
+          categoryId: selectedCategory.id,
+          name,
+          price: parseInt(price || '0'),
+          description: description || ''
+        }, { categoryName: selectedCategory.name });
+
+        // Convert to local Menu interface
+        const newMenu: Menu = {
+          id: newMenuData.id!,
+          categoryId: newMenuData.categoryId!,
+          name: newMenuData.name,
+          description: newMenuData.description,
+          price: newMenuData.price?.toString() || '0',
+          storeNumber: newMenuData.storeId || '',
+          userPin: 'default',
+          sortOrder: newMenuData.sortOrder || 0,
+          createdAt: new Date(newMenuData.createdAt!)
+        };
+
+        // Add the new menu
+        setSavedMenus(prev => [...prev, newMenu]);
+        setIsAddMode(false);
+
+        // Reload categories to update menu counts
+        await loadCategories();
+
+      } catch (error) {
+        console.error('❌ Failed to create menu:', error);
+        alert('Failed to create menu. Please try again.');
+      } finally {
+        setLoading(false);
+      }
+    }
+  };
+
+  const handleMenuDelete = async (menu: Menu) => {
+    console.log('🗑️ handleMenuDelete called for menu:', menu);
+    try {
+      setLoading(true);
+
+      // Find category name for logging
+      const category = savedCategories.find(c => c.id === menu.categoryId);
+      const categoryName = category ? category.name : 'Unknown Category';
+
+      // Prepare entity data for logging
+      const menuData: MenuData = {
+        id: menu.id,
+        categoryId: menu.categoryId,
+        storeId: menu.storeNumber,
+        name: menu.name,
+        price: parseInt(menu.price || '0'),
+        description: menu.description,
+        sortOrder: menu.sortOrder
+      };
+
+      // Delete from server with integrated logging
+      await menuServiceWithLogging.delete(
+        menu.id,
+        menuData,
+        { categoryName }
+      );
+
+      // Start fade animation
+      setCardsTransitioning(true);
+      setAnimatingCardId(menu.id);
+
+      // Fade out the card
+      setTimeout(() => {
+        // Remove from local state
+        setSavedMenus(prev => prev.filter(m => m.id !== menu.id));
+
+        // Fade in remaining cards
+        setTimeout(() => {
+          setCardsTransitioning(false);
+          setAnimatingCardId(null);
+        }, 25);
+      }, 150);
+
+      // Reload categories to update menu counts
+      await loadCategories();
+
+    } catch (error) {
+      console.error('❌ Failed to delete menu:', error);
+      alert('Failed to delete menu. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    fetchDashboardData();
-
-    // 30초마다 데이터 새로고침
-    const interval = setInterval(fetchDashboardData, 30000);
-
-    return () => clearInterval(interval);
-  }, []);
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('ko-KR', {
-      style: 'currency',
-      currency: 'KRW',
-    }).format(amount);
+  const handleCancel = () => {
+    setIsAddMode(false);
   };
 
-  const formatTime = (dateString: string) => {
-    return new Date(dateString).toLocaleTimeString('ko-KR', {
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+  const handleTableDelete = async (table: Table) => {
+    console.log('🗑️ handleTableDelete called for table:', table);
+    try {
+      setLoading(true);
+
+      // Get place name for logging
+      const place = savedPlaces.find(p => p.id === table.placeId);
+
+      // Prepare entity data for logging
+      const tableData: TableData = {
+        id: table.id,
+        placeId: table.placeId,
+        storeId: table.storeNumber,
+        name: table.name,
+        color: getHexColor(table.color),
+        diningCapacity: table.diningCapacity || 4
+      };
+
+      // Delete from server with integrated logging
+      await tableServiceWithLogging.delete(
+        table.id,
+        tableData,
+        { placeName: place?.name }
+      );
+
+      // Start fade animation
+      setCardsTransitioning(true);
+      setAnimatingCardId(table.id);
+
+      // Fade out current cards
+      setTimeout(async () => {
+        // Reload tables from server to ensure UI is in sync
+        if (selectedPlace) {
+          await loadTablesByPlace(selectedPlace.id);
+        }
+
+        // Fade in remaining cards
+        setTimeout(() => {
+          setCardsTransitioning(false);
+          setAnimatingCardId(null);
+        }, 25);
+      }, 150);
+
+    } catch (error) {
+      console.error('❌ Failed to delete table:', error);
+      alert('Failed to delete table. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const getStatusColor = (status: string) => {
-    const colors = {
-      pending: 'text-orange-600 dark:text-orange-400',
-      preparing: 'text-blue-600 dark:text-blue-400',
-      ready: 'text-green-600 dark:text-green-400',
-      completed: 'text-gray-600 dark:text-gray-400',
-      available: 'text-green-600 dark:text-green-400',
-      occupied: 'text-red-600 dark:text-red-400',
-      reserved: 'text-yellow-600 dark:text-yellow-400'
+  const handlePlaceDelete = async (place: Place) => {
+    console.log('🗑️ handlePlaceDelete called for place:', place);
+    try {
+      setLoading(true);
+
+      // Prepare entity data for logging
+      const placeData: PlaceData = {
+        id: place.id,
+        storeId: place.storeNumber,
+        name: place.name,
+        color: getHexColor(place.color),
+        tableCount: place.tableCount,
+        sortOrder: place.sortOrder
+      };
+
+      // Delete from server with integrated logging
+      await placeServiceWithLogging.delete(
+        place.id,
+        placeData
+      );
+
+      // Start fade animation
+      setCardsTransitioning(true);
+      setAnimatingCardId(place.id);
+
+      // Fade out current cards
+      setTimeout(() => {
+        // Remove from saved places
+        setSavedPlaces(prev => prev.filter(p => p.id !== place.id));
+
+        // Fade in remaining cards
+        setTimeout(() => {
+          setCardsTransitioning(false);
+          setAnimatingCardId(null);
+        }, 25);
+      }, 150);
+
+      // Refresh places data in logging service for ItemComp processing
+      await refreshPlacesData();
+
+    } catch (error) {
+      console.error('❌ Failed to delete place:', error);
+      alert('Failed to delete place. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCategoryDelete = async (category: Category) => {
+    console.log('🗑️ handleCategoryDelete called for category:', category);
+
+    // Pre-check: If category has menus, prevent deletion
+    if (category.menuCount > 0) {
+      alert(
+        `Cannot delete "${category.name}" because it contains ${category.menuCount} menu item(s).\n\n` +
+        `Please delete all menu items in this category first, then try again.`
+      );
+      return; // Cannot delete
+    }
+
+    try {
+      setLoading(true);
+
+      // Prepare entity data for logging
+      const categoryData: CategoryData = {
+        id: category.id,
+        storeId: category.storeNumber,
+        name: category.name,
+        color: getHexColor(category.color),
+        _count: { menus: category.menuCount },
+        sortOrder: category.sortOrder
+      };
+
+      // Delete from server with integrated logging
+      await categoryServiceWithLogging.delete(
+        category.id,
+        categoryData
+      );
+
+      // Start fade animation
+      setCardsTransitioning(true);
+      setAnimatingCardId(category.id);
+
+      // Fade out current cards
+      setTimeout(() => {
+        // Remove from saved categories
+        setSavedCategories(prev => prev.filter(c => c.id !== category.id));
+
+        // Fade in remaining cards
+        setTimeout(() => {
+          setCardsTransitioning(false);
+          setAnimatingCardId(null);
+        }, 25);
+      }, 150);
+
+    } catch (error) {
+      console.error('❌ Failed to delete category:', error);
+
+      // Parse error message to provide more specific feedback
+      let errorMessage = 'Failed to delete category. Please try again.';
+
+      if (error instanceof Error) {
+        if (error.message.includes('메뉴가 있는 카테고리는 삭제할 수 없습니다') ||
+            error.message.includes('Cannot delete category with existing menus')) {
+          errorMessage = `Cannot delete "${category.name}" because it contains ${category.menuCount} menu(s). Please delete all menus in this category first.`;
+        } else if (error.message.includes('Foreign key constraint')) {
+          errorMessage = `Cannot delete "${category.name}" because it has associated data. Please remove all related items first.`;
+        }
+      }
+
+      alert(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Long-press handler to enter edit mode
+  const handleCardLongPress = (place: Place) => {
+    if (place.id === 'add') return;
+
+    console.log('Long-press detected on:', place.name);
+    setIsCardEditMode(true);
+    setEditingPlace(place);
+    setIsAddMode(true); // Show the settings panel
+  };
+
+  // Category long-press handler to enter edit mode
+  const handleCategoryLongPress = (category: Category) => {
+    if (category.id === 'add') return;
+
+    console.log('Long-press detected on category:', category.name);
+    setIsCardEditMode(true);
+    setEditingCategory(category);
+    setIsAddMode(true); // Show the settings panel
+  };
+
+  // Table long-press handler to enter edit mode
+  const handleTableLongPress = (place: Place) => {
+    if (place.id === 'add') return;
+
+    // Find the actual table from the savedTables array
+    const actualTable = savedTables.find(table => table.id === place.id);
+    if (!actualTable) return;
+
+    console.log('Long-press detected on table:', actualTable.name);
+    setIsCardEditMode(true);
+    setEditingTable(actualTable);
+    setIsAddMode(true); // Show the settings panel
+  };
+
+  // Menu long-press handler to enter edit mode
+  const handleMenuLongPress = (place: Place) => {
+    if (place.id === 'add') return;
+
+    // Find the actual menu from the savedMenus array
+    const actualMenu = savedMenus.find(menu => menu.id === place.id);
+    if (!actualMenu) return;
+
+    console.log('Long-press detected on menu:', actualMenu.name);
+    setIsCardEditMode(true);
+    setEditingMenu(actualMenu);
+    setIsAddMode(true); // Show the settings panel
+  };
+
+  // Handle card reordering
+  const handleCardReorder = async (reorderedPlaces: Place[]) => {
+    // Update local state immediately for responsive UI
+    setSavedPlaces(reorderedPlaces);
+
+    try {
+      // Create order updates with new sort_order values
+      const placeOrders = reorderedPlaces.map((place, index) => ({
+        id: place.id,
+        sortOrder: index + 1 // 1-based ordering
+      }));
+
+      // Save to database
+      await placeService.updatePlaceOrder(placeOrders);
+      console.log('✅ Place order saved to database');
+
+      // Update local places with new sort_order values
+      setSavedPlaces(prev => prev.map((place, index) => ({
+        ...place,
+        sortOrder: index + 1
+      })));
+
+    } catch (error) {
+      console.error('❌ Failed to save place order:', error);
+      // Optionally: reload places from server to restore correct order
+      loadPlaces();
+    }
+  };
+
+  // Handle category reordering
+  const handleCategoryReorder = async (reorderedCategories: Category[]) => {
+    // Update local state immediately for responsive UI
+    setSavedCategories(reorderedCategories);
+
+    try {
+      // Create order updates with new sortOrder values
+      const categoryOrders = reorderedCategories.map((category, index) => ({
+        id: category.id,
+        sortOrder: index + 1 // 1-based ordering
+      }));
+
+      // Save to database
+      await categoryService.updateCategoryOrder(categoryOrders);
+      console.log('✅ Category order saved to database');
+
+      // Update local categories with new sort_order values
+      setSavedCategories(prev => prev.map((category, index) => ({
+        ...category,
+        sortOrder: index + 1
+      })));
+
+    } catch (error) {
+      console.error('❌ Failed to save category order:', error);
+      // Optionally: reload categories from server to restore correct order
+      loadCategories();
+    }
+  };
+
+  // Handle editing completion
+  const handleEditSave = async (name: string, selectedColor: string, storeNumber?: string, userPin?: string, placeId?: string, description?: string, price?: string) => {
+    if (editingPlace) {
+      try {
+        setLoading(true);
+
+        // Prepare old entity data
+        const oldPlaceData: PlaceData = {
+          id: editingPlace.id,
+          storeId: editingPlace.storeNumber,
+          name: editingPlace.name,
+          color: getHexColor(editingPlace.color),
+          tableCount: editingPlace.tableCount,
+          sortOrder: editingPlace.sortOrder
+        };
+
+        // Update place on server with integrated logging
+        await placeServiceWithLogging.update(
+          editingPlace.id,
+          {
+            name,
+            color: getHexColor(selectedColor) // Convert CSS variable to hex
+          },
+          oldPlaceData
+        );
+
+        // Refresh places data for ItemComp processing
+        await refreshPlacesData();
+
+        // Start fade animation
+        setCardsTransitioning(true);
+
+        // Fade out current cards
+        setTimeout(() => {
+          // Update the existing place
+          setSavedPlaces(prev => prev.map(p =>
+            p.id === editingPlace.id
+              ? { ...p, name, color: selectedColor, storeNumber: storeNumber || p.storeNumber, userPin: userPin || p.userPin }
+              : p
+          ));
+
+          // Exit edit mode
+          setIsCardEditMode(false);
+          setEditingPlace(null);
+          setIsAddMode(false);
+
+          // Fade in updated cards
+          setTimeout(() => {
+            setCardsTransitioning(false);
+          }, 25);
+        }, 150);
+
+      } catch (error) {
+        console.error('❌ Failed to update place:', error);
+        alert('Failed to update place. Please try again.');
+      } finally {
+        setLoading(false);
+      }
+    } else if (editingTable) {
+      try {
+        setLoading(true);
+
+        // Get place names for logging
+        const oldPlace = savedPlaces.find(p => p.id === editingTable.placeId);
+        const newPlace = savedPlaces.find(p => p.id === (placeId || editingTable.placeId));
+
+        // Prepare old entity data
+        const oldTableData: TableData = {
+          id: editingTable.id,
+          placeId: editingTable.placeId,
+          storeId: editingTable.storeNumber,
+          name: editingTable.name,
+          color: getHexColor(editingTable.color),
+          diningCapacity: editingTable.diningCapacity
+        };
+
+        // Update table on server with integrated logging
+        const updatedTable = await tableServiceWithLogging.update(
+          editingTable.id,
+          {
+            name,
+            color: selectedColor, // selectedColor is now the place's color (already hex)
+            placeId: placeId ? placeId : editingTable.placeId
+          },
+          oldTableData,
+          {
+            oldPlaceName: oldPlace?.name,
+            newPlaceName: newPlace?.name
+          }
+        );
+
+        // Start fade animation
+        setCardsTransitioning(true);
+
+        // Fade out current cards
+        setTimeout(async () => {
+          // Reload tables from server to ensure UI is in sync
+          if (selectedPlace) {
+            await loadTablesByPlace(selectedPlace.id);
+          }
+
+          // Exit edit mode
+          setIsCardEditMode(false);
+          setEditingTable(null);
+          setIsAddMode(false);
+
+          // Fade in updated cards
+          setTimeout(() => {
+            setCardsTransitioning(false);
+          }, 25);
+        }, 150);
+
+      } catch (error) {
+        console.error('❌ Failed to update table:', error);
+        alert('Failed to update table. Please try again.');
+      } finally {
+        setLoading(false);
+      }
+    } else if (editingCategory) {
+      try {
+        setLoading(true);
+
+        // Prepare old entity data
+        const oldCategoryData: CategoryData = {
+          id: editingCategory.id,
+          storeId: editingCategory.storeNumber,
+          name: editingCategory.name,
+          color: getHexColor(editingCategory.color),
+          _count: { menus: editingCategory.menuCount },
+          sortOrder: editingCategory.sortOrder
+        };
+
+        // Update category on server with integrated logging
+        await categoryServiceWithLogging.update(
+          editingCategory.id,
+          {
+            name,
+            color: getHexColor(selectedColor) // Convert CSS variable to hex
+          },
+          oldCategoryData
+        );
+
+        // Start fade animation
+        setCardsTransitioning(true);
+
+        // Fade out current cards
+        setTimeout(() => {
+          // Update the existing category
+          setSavedCategories(prev => prev.map(c =>
+            c.id === editingCategory.id
+              ? {
+                  ...c,
+                  name,
+                  color: selectedColor,
+                  storeNumber: storeNumber || c.storeNumber,
+                  userPin: userPin || c.userPin
+                }
+              : c
+          ));
+
+          // Exit edit mode
+          setIsCardEditMode(false);
+          setEditingCategory(null);
+          setIsAddMode(false);
+
+          // Fade in updated cards
+          setTimeout(() => {
+            setCardsTransitioning(false);
+          }, 25);
+        }, 150);
+
+      } catch (error) {
+        console.error('❌ Failed to update category:', error);
+        alert('Failed to update category. Please try again.');
+      } finally {
+        setLoading(false);
+      }
+    } else if (editingMenu) {
+      try {
+        setLoading(true);
+
+        // Find old and new category names for logging
+        const oldCategory = savedCategories.find(c => c.id === editingMenu.categoryId);
+        const newCategoryId = placeId || editingMenu.categoryId;
+        const newCategory = savedCategories.find(c => c.id === newCategoryId);
+        const oldCategoryName = oldCategory ? oldCategory.name : 'Unknown Category';
+        const newCategoryName = newCategory ? newCategory.name : 'Unknown Category';
+
+        // Prepare old entity data
+        const oldMenuData: MenuData = {
+          id: editingMenu.id,
+          categoryId: editingMenu.categoryId,
+          storeId: editingMenu.storeNumber,
+          name: editingMenu.name,
+          price: parseInt(editingMenu.price || '0'),
+          description: editingMenu.description,
+          sortOrder: editingMenu.sortOrder
+        };
+
+        // Update menu on server with integrated logging
+        const updatedMenuData = await menuServiceWithLogging.update(
+          editingMenu.id,
+          {
+            name,
+            categoryId: newCategoryId,
+            description,
+            price: parseInt(price || '0')
+          },
+          oldMenuData,
+          {
+            oldCategoryName,
+            newCategoryName
+          }
+        );
+
+        // Convert to local Menu interface
+        const updatedMenu: Menu = {
+          id: updatedMenuData.id!,
+          categoryId: updatedMenuData.categoryId!,
+          name: updatedMenuData.name,
+          description: updatedMenuData.description,
+          price: updatedMenuData.price?.toString() || '0',
+          storeNumber: updatedMenuData.storeId || '',
+          userPin: 'default',
+          sortOrder: updatedMenuData.sortOrder || 0,
+          createdAt: new Date(updatedMenuData.createdAt!)
+        };
+
+        // Start fade animation
+        setCardsTransitioning(true);
+
+        // Fade out current cards
+        setTimeout(() => {
+          // Update the existing menu
+          setSavedMenus(prev => prev.map(m =>
+            m.id === editingMenu.id
+              ? updatedMenu
+              : m
+          ));
+
+          // Exit edit mode
+          setIsCardEditMode(false);
+          setEditingMenu(null);
+          setIsAddMode(false);
+
+          // Fade in updated cards
+          setTimeout(() => {
+            setCardsTransitioning(false);
+          }, 25);
+        }, 150);
+
+      } catch (error) {
+        console.error('❌ Failed to update menu:', error);
+        alert('Failed to update menu. Please try again.');
+      } finally {
+        setLoading(false);
+      }
+    } else {
+      // Regular add mode
+      await handleSave(name, selectedColor, storeNumber, userPin, placeId, description, price);
+    }
+  };
+
+  const handleEditCancel = () => {
+    setIsCardEditMode(false);
+    setEditingPlace(null);
+    setEditingTable(null);
+    setEditingCategory(null);
+    setEditingMenu(null);
+    setIsAddMode(false);
+  };
+
+  const handleEditDelete = async () => {
+    console.log('🗑️ handleEditDelete called', { editingPlace, editingTable, editingCategory, isCardEditMode });
+    if (editingPlace) {
+      console.log('🗑️ Deleting place:', editingPlace.name);
+      await handlePlaceDelete(editingPlace);
+      setIsCardEditMode(false);
+      setEditingPlace(null);
+      setIsAddMode(false);
+    } else if (editingTable) {
+      console.log('🗑️ Deleting table:', editingTable.name);
+      await handleTableDelete(editingTable);
+      setIsCardEditMode(false);
+      setEditingTable(null);
+      setIsAddMode(false);
+    } else if (editingCategory) {
+      console.log('🗑️ Deleting category:', editingCategory.name);
+      await handleCategoryDelete(editingCategory);
+      setIsCardEditMode(false);
+      setEditingCategory(null);
+      setIsAddMode(false);
+    } else if (editingMenu) {
+      console.log('🗑️ Deleting menu:', editingMenu.name);
+      await handleMenuDelete(editingMenu);
+      setIsCardEditMode(false);
+      setEditingMenu(null);
+      setIsAddMode(false);
+    } else {
+      console.warn('🗑️ No editing item found - cannot delete');
+    }
+  };
+
+
+  // Get current date/time formatted like in design
+  const getCurrentDateTime = () => {
+    const now = new Date();
+    const options: Intl.DateTimeFormatOptions = {
+      weekday: 'long',
+      month: 'long',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true
     };
-    return colors[status as keyof typeof colors] || 'text-gray-600 dark:text-gray-400';
+    return now.toLocaleDateString('en-US', options);
   };
 
-  const getStatusText = (status: string) => {
-    const texts = {
-      pending: '대기중',
-      preparing: '준비중',
-      ready: '완료',
-      completed: '완료됨',
-      available: '사용가능',
-      occupied: '사용중',
-      reserved: '예약됨'
-    };
-    return texts[status as keyof typeof texts] || status;
+  const tabs = ['Dashboard', 'Analytics', 'AI Agent'];
+
+  const handleTabChange = (tab: string) => {
+    setSelectedTab(tab);
+    if (tab === 'Analytics') {
+      navigate('/analytics');
+    } else if (tab === 'AI Agent') {
+      navigate('/ai-agent');
+    }
   };
 
-  if (loading && !stats) {
-    return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: colors.bgBlack }}>
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
-          <p style={{ color: colors.basicWhite }}>실시간 현황을 불러오는 중...</p>
-        </div>
-      </div>
-    );
-  }
+  // Prevent touch scrolling/swiping on tablets
+  const handleTouchMove = (e: React.TouchEvent) => {
+    e.preventDefault();
+  };
 
-  if (error) {
-    return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: colors.bgBlack }}>
-        <div className="text-center">
-          <div className="text-red-500 text-xl mb-4">⚠️</div>
-          <p style={{ color: colors.basicWhite }} className="mb-4">{error}</p>
-          <button
-            onClick={fetchDashboardData}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            다시 시도
-          </button>
-        </div>
-      </div>
-    );
-  }
+  const handleTouchStart = (e: React.TouchEvent) => {
+    // Allow touch events on interactive elements
+    const target = e.target as HTMLElement;
+    const isInteractive = target.closest('button, [role="button"], input, textarea, select, a, [tabindex]');
+
+    if (!isInteractive) {
+      e.preventDefault();
+    }
+  };
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: colors.bgBlack }}>
+    <div
+      className="bg-black box-border flex flex-col items-center justify-between overflow-hidden relative rounded-[2.25rem] w-full h-full max-h-screen"
+      style={{
+        padding: 'clamp(0.5rem, 1.25vw, 1.25rem)',
+        touchAction: 'none',
+        userSelect: 'none'
+      }}
+      data-name="DashboardPage"
+      data-node-id="184:4003"
+      onTouchMove={handleTouchMove}
+      onTouchStart={handleTouchStart}
+    >
       {/* Header */}
-      <header style={{ backgroundColor: colors.buttonBackground, borderBottom: `1px solid ${colors.buttonBorder}` }}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
-                <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                </svg>
-              </div>
-              <h1 className="text-xl font-bold" style={{ color: colors.basicWhite }}>실시간 현황</h1>
-            </div>
-
-            <div className="flex items-center space-x-4">
-              <div className="text-sm" style={{ color: '#ccc' }}>
-                <span className="font-medium">{store?.name}</span>
-                <span className="mx-2">|</span>
-                <span>{user?.name}</span>
-              </div>
-              <div className="flex items-center space-x-1 text-sm text-green-400">
-                <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                <span>실시간</span>
-              </div>
-              <button
-                onClick={fetchDashboardData}
-                style={{
-                  backgroundColor: colors.buttonBackground,
-                  border: `1px solid ${colors.buttonBorder}`,
-                  color: colors.basicWhite,
-                  padding: '6px 12px',
-                  borderRadius: '6px',
-                  fontSize: '14px',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease-in-out'
-                }}
-              >
-                새로고침
-              </button>
-            </div>
+      <div className="box-border content-stretch flex items-center justify-between overflow-hidden px-[2vw] py-0 relative shrink-0 w-full" style={{ height: 'clamp(3rem, 6vh, 4rem)' }} data-name="Header" data-node-id="184:4004">
+        <div
+          className="content-stretch flex flex-col gap-2.5 items-center justify-center overflow-hidden relative shrink-0 cursor-pointer"
+          style={{ width: '2rem', height: '2rem' }}
+          data-name="Home"
+          data-node-id="184:4005"
+          onClick={onHome}
+        >
+          <div className="aspect-[80/80] overflow-hidden relative shrink-0 w-full" data-name="Home Icon" data-node-id="184:4006">
+            <img alt="" className="block max-w-none size-full" src={homeIconSvg} />
           </div>
         </div>
-      </header>
-
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Store Info */}
-        <div className="mb-8">
-          <h2 className="text-2xl font-bold text-dark-900 dark:text-white mb-2">
-            {store?.name} 실시간 현황
-          </h2>
-          <p className="text-dark-600 dark:text-dark-400">
-            현재 운영 상태를 실시간으로 확인하세요
-          </p>
-        </div>
-
-        {/* Quick Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          {/* 오늘 매출 */}
-          <div className="bg-white dark:bg-dark-800 rounded-xl shadow-sm border border-dark-200 dark:border-dark-700 p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-dark-600 dark:text-dark-400">오늘 매출</p>
-                <p className="text-2xl font-bold text-dark-900 dark:text-white">
-                  {stats ? formatCurrency(stats.totalSales) : '₩0'}
-                </p>
-              </div>
-              <div className="w-12 h-12 bg-green-100 dark:bg-green-900 rounded-xl flex items-center justify-center">
-                <svg className="w-6 h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
-                </svg>
-              </div>
-            </div>
-            <div className="mt-2">
-              <span className="text-sm text-green-600 dark:text-green-400">
-                평균 주문금액: {stats ? formatCurrency(stats.averageOrderValue) : '₩0'}
-              </span>
-            </div>
-          </div>
-
-          {/* 진행중인 주문 */}
-          <div className="bg-white dark:bg-dark-800 rounded-xl shadow-sm border border-dark-200 dark:border-dark-700 p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-dark-600 dark:text-dark-400">진행중인 주문</p>
-                <p className="text-2xl font-bold text-dark-900 dark:text-white">
-                  {stats?.activeOrders || 0}건
-                </p>
-              </div>
-              <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900 rounded-xl flex items-center justify-center">
-                <svg className="w-6 h-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v6a2 2 0 002 2h2m9-9h-4v10h4" />
-                </svg>
-              </div>
-            </div>
-            <div className="mt-2">
-              <span className="text-sm text-dark-600 dark:text-dark-400">
-                총 주문: {stats?.totalOrders || 0}건
-              </span>
-            </div>
-          </div>
-
-          {/* 사용중인 테이블 */}
-          <div className="bg-white dark:bg-dark-800 rounded-xl shadow-sm border border-dark-200 dark:border-dark-700 p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-dark-600 dark:text-dark-400">사용중인 테이블</p>
-                <p className="text-2xl font-bold text-dark-900 dark:text-white">
-                  {stats?.activeTables || 0}개
-                </p>
-              </div>
-              <div className="w-12 h-12 bg-orange-100 dark:bg-orange-900 rounded-xl flex items-center justify-center">
-                <svg className="w-6 h-6 text-orange-600 dark:text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                </svg>
-              </div>
-            </div>
-            <div className="mt-2">
-              <span className="text-sm text-dark-600 dark:text-dark-400">
-                피크시간: {stats?.peakHour || 'N/A'}
-              </span>
-            </div>
-          </div>
-
-          {/* 완료된 주문 */}
-          <div className="bg-white dark:bg-dark-800 rounded-xl shadow-sm border border-dark-200 dark:border-dark-700 p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-dark-600 dark:text-dark-400">완료된 주문</p>
-                <p className="text-2xl font-bold text-dark-900 dark:text-white">
-                  {stats?.completedOrders || 0}건
-                </p>
-              </div>
-              <div className="w-12 h-12 bg-purple-100 dark:bg-purple-900 rounded-xl flex items-center justify-center">
-                <svg className="w-6 h-6 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-            </div>
+        <div className="box-border content-stretch flex h-full items-center justify-center px-[1.5vw] py-0 relative shrink-0" data-name="PageName" data-node-id="184:4007">
+          <div className="flex flex-col font-['Pretendard'] font-extrabold justify-center leading-[0] not-italic relative shrink-0 text-center text-nowrap text-white" style={{ fontSize: 'clamp(1.5rem, 3vw, 2.5rem)' }} data-node-id="184:4008">
+            <p className="leading-[normal] whitespace-pre">Dashboard</p>
           </div>
         </div>
+        <div className="box-border content-stretch flex h-full items-center justify-end px-[1vw] py-0 relative shrink-0 flex-1 gap-2" data-name="DateTime" data-node-id="184:4009">
+          {/* Sync status indicator */}
+          <SyncStatus syncStatus={syncStatus} />
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* 인기 메뉴 */}
-          <div className="bg-white dark:bg-dark-800 rounded-xl shadow-sm border border-dark-200 dark:border-dark-700 p-6">
-            <h3 className="text-lg font-semibold text-dark-900 dark:text-white mb-4">오늘의 인기 메뉴</h3>
-            <div className="space-y-3">
-              {stats?.popularItems && stats.popularItems.length > 0 ? (
-                stats.popularItems.map((item, index) => (
-                  <div key={index} className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-8 h-8 bg-primary-100 dark:bg-primary-900 rounded-lg flex items-center justify-center">
-                        <span className="text-sm font-semibold text-primary-600 dark:text-primary-400">
-                          {index + 1}
-                        </span>
-                      </div>
-                      <span className="font-medium text-dark-900 dark:text-white">{item.name}</span>
-                    </div>
-                    <span className="text-sm text-dark-600 dark:text-dark-400">{item.count}회</span>
-                  </div>
-                ))
-              ) : (
-                <p className="text-dark-600 dark:text-dark-400">아직 주문 데이터가 없습니다.</p>
-              )}
-            </div>
-          </div>
-
-          {/* 최근 POS 활동 */}
-          <div className="bg-white dark:bg-dark-800 rounded-xl shadow-sm border border-dark-200 dark:border-dark-700 p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-dark-900 dark:text-white">최근 POS 활동</h3>
-              <button
-                onClick={fetchDashboardData}
-                className="text-sm text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300"
-              >
-                새로고침
-              </button>
-            </div>
-            <div className="space-y-3 max-h-80 overflow-y-auto">
-              {posLogs.length > 0 ? (
-                posLogs.map((log) => (
-                  <div key={log.id} className="flex items-start space-x-3 p-3 rounded-lg bg-dark-50 dark:bg-dark-700">
-                    <div className="w-2 h-2 bg-primary-500 rounded-full mt-2 flex-shrink-0"></div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-dark-900 dark:text-white">{log.action}</p>
-                      <p className="text-sm text-dark-600 dark:text-dark-400">{log.description}</p>
-                      <div className="flex items-center space-x-2 mt-1">
-                        <span className="text-xs text-dark-500 dark:text-dark-500">{log.userName}</span>
-                        <span className="text-xs text-dark-400 dark:text-dark-400">•</span>
-                        <span className="text-xs text-dark-500 dark:text-dark-500">{formatTime(log.timestamp)}</span>
-                      </div>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <p className="text-dark-600 dark:text-dark-400">최근 활동이 없습니다.</p>
-              )}
-            </div>
+          <div className="flex flex-col font-['Pretendard'] font-semibold h-full justify-center leading-[0] not-italic relative shrink-0 text-[#e0e0e0] text-right whitespace-nowrap" style={{ fontSize: 'clamp(0.9rem, 1.5vw, 1.5rem)' }} data-node-id="184:4010">
+            <p className="leading-[normal]">{getCurrentDateTime()}</p>
           </div>
         </div>
+      </div>
 
-        {/* 기존 최근 주문과 테이블 상태는 백엔드 API가 준비되면 표시 */}
-        {(recentOrders.length > 0 || tables.length > 0) && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
-            {/* Recent Orders */}
-            {recentOrders.length > 0 && (
-              <div className="bg-white dark:bg-dark-800 rounded-xl shadow-sm border border-dark-200 dark:border-dark-700 p-6">
-                <h3 className="text-lg font-semibold text-dark-900 dark:text-white mb-4">최근 주문</h3>
-                <div className="space-y-4">
-                  {recentOrders.map((order) => (
-                    <div key={order.id} className="flex items-center justify-between p-3 bg-dark-50 dark:bg-dark-700 rounded-lg">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-8 h-8 bg-primary-100 dark:bg-primary-900 rounded-lg flex items-center justify-center">
-                          <span className="text-sm font-semibold text-primary-600 dark:text-primary-400">
-                            {order.tableNumber}
-                          </span>
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium text-dark-900 dark:text-white">
-                            테이블 {order.tableNumber} · {order.items}개 항목
-                          </p>
-                          <p className="text-xs text-dark-600 dark:text-dark-400">
-                            {formatTime(order.createdAt)} · {formatCurrency(order.total)}
-                          </p>
-                        </div>
-                      </div>
-                      <span className={`text-sm font-medium ${getStatusColor(order.status)}`}>
-                        {getStatusText(order.status)}
-                      </span>
-                    </div>
-                  ))}
-                </div>
+      {/* Body */}
+      <div className="flex-1 box-border flex items-stretch min-h-0 min-w-0 overflow-hidden relative w-full" style={{ paddingTop: 'clamp(0.25rem, 0.5vh, 0.75rem)', paddingBottom: 'clamp(0.25rem, 0.5vh, 0.75rem)', gap: 'clamp(0.5rem, 1vw, 1rem)' }} data-name="Body" data-node-id="184:4011">
+        {/* Content - 70% width */}
+        <div className="h-full min-h-0 max-h-full relative rounded-[1.5rem] border border-[#363636]" style={{ flex: '7', minWidth: '0' }} data-name="Content" data-node-id="184:4012">
+          <div className="flex flex-col items-center justify-start min-w-0 overflow-hidden relative w-full h-full">
+            {/* Content Header */}
+            <div className="box-border content-stretch flex items-center justify-between overflow-hidden px-[0.5rem] py-[0.5rem] relative shrink-0 w-full" style={{ height: 'clamp(3rem, 8vh, 4.5rem)' }} data-name="ContentHeader" data-node-id="184:4013">
+              <ManagementItemsComp
+                tabs={tabs}
+                selectedTab={selectedTab}
+                onTabChange={handleTabChange}
+                onAddClick={handleAddButtonClick}
+                tabTransitioning={tabTransitioning}
+                hideAddButton={selectedTab === 'Table' || selectedTab === 'Menu'} // Hide add button for Table and Menu tabs
+              />
+            </div>
+
+            {/* Content Sub Header - Show for Table and Menu tabs */}
+            {selectedTab === 'Table' && (
+              <div className="box-border content-stretch flex items-center justify-between overflow-hidden px-[0.5rem] py-[0.5rem] relative shrink-0 w-full" style={{ height: 'clamp(3rem, 8vh, 4.5rem)' }} data-name="ContentSubHeader">
+                <ManagementSubItemsComp
+                  tabs={savedPlaces.map(place => place.name)}
+                  selectedTab={selectedPlace?.name || ''}
+                  onTabChange={(placeName) => {
+                    const place = savedPlaces.find(p => p.name === placeName);
+                    if (place) {
+                      // Exit edit mode when switching place sub-tabs
+                      setIsCardEditMode(false);
+                      setEditingPlace(null);
+                      setEditingTable(null);
+                      setEditingCategory(null);
+
+                      setSelectedPlace(place);
+                      loadTablesByPlace(place.id);
+                    }
+                  }}
+                  onAddClick={handleAddButtonClick} // Enable add for tables
+                  tabTransitioning={tabTransitioning}
+                />
               </div>
             )}
 
-            {/* Table Status */}
-            {tables.length > 0 && (
-              <div className="bg-white dark:bg-dark-800 rounded-xl shadow-sm border border-dark-200 dark:border-dark-700 p-6">
-                <h3 className="text-lg font-semibold text-dark-900 dark:text-white mb-4">테이블 현황</h3>
-                <div className="grid grid-cols-4 gap-3">
-                  {tables.map((table) => (
-                    <div
-                      key={table.tableNumber}
-                      className={`p-3 rounded-lg border-2 text-center ${
-                        table.status === 'available'
-                          ? 'border-green-200 bg-green-50 dark:border-green-700 dark:bg-green-900'
-                          : table.status === 'occupied'
-                          ? 'border-red-200 bg-red-50 dark:border-red-700 dark:bg-red-900'
-                          : 'border-yellow-200 bg-yellow-50 dark:border-yellow-700 dark:bg-yellow-900'
-                      }`}
-                    >
-                      <div className="text-lg font-bold text-dark-900 dark:text-white">
-                        {table.tableNumber}
-                      </div>
-                      <div className={`text-xs ${getStatusColor(table.status)}`}>
-                        {getStatusText(table.status)}
-                      </div>
-                      {table.occupiedSince && (
-                        <div className="text-xs text-dark-600 dark:text-dark-400 mt-1">
-                          {formatTime(table.occupiedSince)}
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
+            {/* Content Sub Header - Show for Menu tab */}
+            {selectedTab === 'Menu' && (
+              <div className="box-border content-stretch flex items-center justify-between overflow-hidden px-[0.5rem] py-[0.5rem] relative shrink-0 w-full" style={{ height: 'clamp(3rem, 8vh, 4.5rem)' }} data-name="ContentSubHeader">
+                <ManagementSubItemsComp
+                  tabs={savedCategories.map(category => category.name)}
+                  selectedTab={selectedCategory?.name || ''}
+                  onTabChange={(categoryName) => {
+                    const category = savedCategories.find(c => c.name === categoryName);
+                    if (category) {
+                      // Exit edit mode when switching category sub-tabs
+                      setIsCardEditMode(false);
+                      setEditingPlace(null);
+                      setEditingTable(null);
+                      setEditingCategory(null);
+
+                      setSelectedCategory(category);
+                      loadMenusByCategory(category.id);
+                    }
+                  }}
+                  onAddClick={handleAddButtonClick} // Enable add for menus
+                  tabTransitioning={tabTransitioning}
+                />
               </div>
             )}
+
+            {/* Content Body */}
+            <div className="flex-1 flex items-start justify-start min-h-0 min-w-0 relative w-full p-[1vw] overflow-y-auto overflow-x-hidden" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }} data-name="ContentBody" data-node-id="184:4043">
+              <style>{`
+                div::-webkit-scrollbar {
+                  display: none;
+                }
+              `}</style>
+              <div
+                className={`w-full h-full transition-opacity duration-150 ease-in-out ${
+                  tabTransitioning || cardsTransitioning ? 'opacity-0' : 'opacity-100'
+                }`}
+              >
+                {selectedTab === 'Category' && savedCategories.length > 0 ? (
+                  <CardGrid
+                    type="Category"
+                    items={[...savedCategories.map(c => ({
+                      id: c.id,
+                      name: c.name,
+                      color: c.color,
+                      cardData: { menuQty: (c.menuCount || 0).toString() },
+                      storeNumber: c.storeNumber,
+                      userPin: c.userPin,
+                      sortOrder: c.sortOrder,
+                      createdAt: c.createdAt
+                    })), { id: 'add', name: '', color: '', cardData: {} }]}
+                    onCardClick={(category) => {
+                      if (category.id === 'add') {
+                        handleAddButtonClick();
+                      } else {
+                        console.log('Clicked category:', category.name);
+                      }
+                    }}
+                    onCardLongPress={handleCategoryLongPress}
+                    onCardReorder={handleCategoryReorder}
+                    onEditCancel={handleEditCancel}
+                    editingItemId={editingCategory?.id || null}
+                    isTransitioning={cardsTransitioning}
+                    animatingCardId={animatingCardId}
+                    isEditMode={isCardEditMode}
+                  />
+                ) : selectedTab === 'Place' && savedPlaces.length > 0 ? (
+                  <CardGrid
+                    type="Place"
+                    items={[...savedPlaces.map(p => ({ ...p, cardData: { tableQty: (p.tableCount || 0).toString() }, sortOrder: p.sortOrder })), { id: 'add', name: '', color: '', cardData: {} }]}
+                    onCardClick={(place) => {
+                      if (place.id === 'add') {
+                        handleAddButtonClick();
+                      } else {
+                        console.log('Clicked place:', place.name);
+                      }
+                    }}
+                    onCardLongPress={handleCardLongPress}
+                    onCardReorder={handleCardReorder}
+                    onEditCancel={handleEditCancel}
+                    editingItemId={editingPlace?.id || null}
+                    isTransitioning={cardsTransitioning}
+                    animatingCardId={animatingCardId}
+                    isEditMode={isCardEditMode}
+                  />
+                ) : selectedTab === 'Table' && selectedPlace && savedTables.length > 0 ? (
+                  <CardGrid
+                    type="Table"
+                    items={savedTables.map(table => ({
+                      id: table.id,
+                      name: table.name,
+                      color: table.color,
+                      cardData: { person: (table.diningCapacity || 4).toString() },
+                      storeNumber: table.storeNumber,
+                      userPin: table.userPin,
+                      createdAt: table.createdAt
+                    }))}
+                    onCardClick={(table) => {
+                      console.log('Clicked table:', table.name);
+                    }}
+                    onCardLongPress={handleTableLongPress}
+                    onCardReorder={(reorderedTables) => {
+                      // Handle table reordering
+                      console.log('Tables reordered');
+                    }}
+                    onEditCancel={handleEditCancel}
+                    editingItemId={editingTable?.id || null}
+                    isTransitioning={cardsTransitioning}
+                    animatingCardId={animatingCardId}
+                    isEditMode={isCardEditMode}
+                  />
+                ) : selectedTab === 'Menu' && selectedCategory && savedMenus.length > 0 ? (
+                  <CardGrid
+                    type="Menu"
+                    items={savedMenus.map(menu => ({
+                      id: menu.id,
+                      name: menu.name,
+                      color: selectedCategory.color, // Use category color for menu cards
+                      cardData: {
+                        price: menu.price || '0',
+                        description: menu.description || ''
+                      },
+                      storeNumber: menu.storeNumber,
+                      userPin: menu.userPin,
+                      createdAt: menu.createdAt
+                    }))}
+                    onCardClick={(menu) => {
+                      console.log('Clicked menu:', menu.name);
+                    }}
+                    onCardLongPress={handleMenuLongPress}
+                    onCardReorder={(reorderedMenus) => {
+                      // Handle menu reordering
+                      console.log('Menus reordered');
+                    }}
+                    onEditCancel={handleEditCancel}
+                    editingItemId={editingMenu?.id || null}
+                    isTransitioning={cardsTransitioning}
+                    animatingCardId={animatingCardId}
+                    isEditMode={isCardEditMode}
+                  />
+                ) : (
+                  <div
+                    className="content-stretch flex flex-col items-center justify-center overflow-hidden relative shrink-0 w-full h-full"
+                    data-name="Notification"
+                    data-node-id="184:4044"
+                  >
+                    {isAddMode ? (
+                      <Noti
+                        title="Use settings on the right."
+                        description=""
+                      />
+                    ) : (
+                      <Noti
+                        title={getNotiMessage(selectedTab).title}
+                        description={getNotiMessage(selectedTab).description}
+                      />
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
-        )}
-      </main>
+        </div>
+
+        {/* Panel (POS Log / Settings) - 30% width */}
+        <div className="h-full min-h-0 max-h-full relative rounded-[1.5rem] border border-[#363636]" style={{ flex: '3', minWidth: '0' }} data-name="Panel" data-node-id="184:4066">
+          <div className="box-border flex flex-col h-full items-center justify-start min-w-0 overflow-hidden px-[0.5rem] py-0 relative w-full">
+            <PanelHeaderComp
+              title={isAddMode ? (
+                selectedTab === 'Table' ? 'Table Settings' :
+                selectedTab === 'Category' ? 'Category Settings' :
+                selectedTab === 'Menu' ? 'Menu Settings' :
+                'Place Settings'
+              ) : 'POS Log'}
+            />
+            <div className="flex-1 box-border flex flex-col items-center justify-start min-h-0 min-w-0 px-[0.25rem] relative w-full overflow-hidden" style={{ paddingTop: '3vh', paddingBottom: '3vh' }} data-name="PanelBody" data-node-id="184:4071">
+              <PanelContent
+                isAddMode={isAddMode}
+                selectedTab={selectedTab}
+                logEntries={logEntries}
+                onLogUndo={handleLogUndo}
+                onSave={isCardEditMode ? handleEditSave : handleSave}
+                onCancel={isCardEditMode ? handleEditCancel : handleCancel}
+                onDelete={isCardEditMode ? handleEditDelete : undefined}
+                isEditMode={isCardEditMode}
+                editingPlace={editingPlace}
+                editingTable={editingTable}
+                editingCategory={editingCategory}
+                editingMenu={editingMenu}
+                places={savedPlaces}
+                categories={savedCategories}
+                selectedPlace={selectedPlace}
+                selectedCategory={selectedCategory}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
-};
-
-export default DashboardPage;
+}
