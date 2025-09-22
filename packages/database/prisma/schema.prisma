@@ -1,0 +1,394 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// ENUMS
+// ============================================
+
+enum UserRole {
+  owner
+  staff
+  @@map("user_role")
+}
+
+enum SubscriptionStatus {
+  trial
+  active
+  suspended
+  @@map("subscription_status")
+}
+
+enum TableStatus {
+  empty
+  seated
+  ordered
+  @@map("table_status")
+}
+
+enum OrderStatus {
+  pending
+  confirmed
+  cooking
+  ready
+  served
+  cancelled
+  @@map("order_status")
+}
+
+enum PaymentMethod {
+  mobile
+  card
+  cash
+  @@map("payment_method")
+}
+
+enum PaymentStatus {
+  pending
+  completed
+  failed
+  refunded
+  @@map("payment_status")
+}
+
+enum AiConversationType {
+  customer
+  owner
+  @@map("ai_conversation_type")
+}
+
+// ============================================
+// CORE TABLES
+// ============================================
+
+model Store {
+  id                 String             @id @default(uuid())
+  storeCode         Int                @unique @map("store_code")
+  name              String             @db.VarChar(200)
+  businessNumber    String?            @map("business_number") @db.VarChar(20)
+  address           String?            @db.Text
+  phone             String?            @db.VarChar(20)
+  email             String?            @db.VarChar(255)
+  openingHours      Json?              @map("opening_hours") // {"mon": {"open": "09:00", "close": "22:00"}, ...}
+  settings          Json?              // 매장별 설정값
+  scrapingUrl       String?            @map("scraping_url") @db.VarChar(500)
+  subscriptionStatus SubscriptionStatus @default(trial) @map("subscription_status")
+  createdAt         DateTime           @default(now()) @map("created_at")
+  updatedAt         DateTime           @updatedAt @map("updated_at")
+
+  // Relations
+  users            User[]
+  categories       Category[]
+  menus            Menu[]
+  places           Place[]
+  tables           Table[]
+  orders           Order[]
+  historyLogs      HistoryLog[]
+  aiConversations  AiConversation[]
+  analyticsDaily   AnalyticsDaily[]
+
+  @@map("stores")
+}
+
+model User {
+  id              String    @id @default(uuid())
+  storeId         String    @map("store_id")
+  phone           String?   @unique @db.VarChar(20)
+  userPin         String?   @map("user_pin") @db.VarChar(4)
+  password        String?   @db.VarChar(255)
+  name            String    @db.VarChar(100)
+  role            UserRole
+  isMobileVerified Boolean  @default(false) @map("is_mobile_verified")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+  deletedAt       DateTime? @map("deleted_at")
+  lastLoginAt     DateTime? @map("last_login_at")
+
+  // Relations
+  store           Store            @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  historyLogs     HistoryLog[]
+  undoStacks      UndoStack[]
+  aiConversations AiConversation[]
+
+  @@unique([storeId, userPin])
+  @@index([storeId])
+  @@index([phone])
+  @@map("users")
+}
+
+model Category {
+  id        String   @id @default(uuid())
+  storeId   String   @map("store_id")
+  name      String   @db.VarChar(100)
+  color     String?  @db.VarChar(7) // HEX color code
+  sortOrder Int      @default(0) @map("sort_order")
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  store Store  @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  menus Menu[]
+
+  @@index([storeId])
+  @@map("categories")
+}
+
+model Menu {
+  id            String   @id @default(uuid())
+  storeId       String   @map("store_id")
+  categoryId    String?  @map("category_id")
+  name          String   @db.VarChar(200)
+  description   String?  @db.Text
+  price         Decimal  @db.Decimal(10, 2)
+  imageUrl      String?  @map("image_url") @db.VarChar(500)
+  tags          String[] // ['spicy', 'popular', 'new']
+  allergens     String[] // ['peanut', 'milk', 'egg']
+  isAvailable   Boolean  @default(true) @map("is_available")
+  stockQuantity Int?     @map("stock_quantity")
+  prepTime      Int?     @map("prep_time") // minutes
+  calories      Int?
+  sortOrder     Int      @default(0) @map("sort_order")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  store      Store        @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  category   Category?    @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  orderItems OrderItem[]
+
+  @@index([storeId])
+  @@index([categoryId])
+  @@map("menus")
+}
+
+model Place {
+  id        String   @id @default(uuid())
+  storeId   String   @map("store_id")
+  name      String   @db.VarChar(100) // '1st Floor', 'Terrace', etc.
+  color     String?  @db.VarChar(7) // HEX color code
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  store  Store   @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  tables Table[]
+
+  @@index([storeId])
+  @@map("places")
+}
+
+model Table {
+  id        String      @id @default(uuid())
+  storeId   String      @map("store_id")
+  placeId   String?     @map("place_id")
+  qrCode    String      @unique @map("qr_code") @db.VarChar(100)
+  name      String      @db.VarChar(50) // 'Table 1', 'Table A', etc.
+  capacity  Int?
+  status    TableStatus @default(empty)
+  createdAt DateTime    @default(now()) @map("created_at")
+  updatedAt DateTime    @updatedAt @map("updated_at")
+
+  // Relations
+  store  Store   @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  place  Place?  @relation(fields: [placeId], references: [id], onDelete: SetNull)
+  orders Order[]
+
+  @@index([storeId])
+  @@index([placeId])
+  @@index([qrCode])
+  @@map("tables")
+}
+
+model Customer {
+  id        String   @id @default(uuid())
+  sessionId String   @unique @map("session_id") @db.VarChar(100)
+  language  String   @default("ko") @db.VarChar(5)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Relations
+  orders          Order[]
+  aiConversations AiConversation[]
+
+  @@map("customers")
+}
+
+model Order {
+  id               String      @id @default(uuid())
+  storeId          String      @map("store_id")
+  tableId          String      @map("table_id")
+  customerId       String?     @map("customer_id")
+  orderNumber      String      @unique @map("order_number") @db.VarChar(20)
+  status           OrderStatus @default(pending)
+  totalAmount      Decimal     @default(0) @map("total_amount") @db.Decimal(10, 2)
+  specialRequests  String?     @map("special_requests") @db.Text
+  customerLanguage String      @default("ko") @map("customer_language") @db.VarChar(5)
+  aiInteraction    Boolean     @default(false) @map("ai_interaction")
+  createdAt        DateTime    @default(now()) @map("created_at")
+  updatedAt        DateTime    @updatedAt @map("updated_at")
+  completedAt      DateTime?   @map("completed_at")
+
+  // Relations
+  store           Store            @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  table           Table            @relation(fields: [tableId], references: [id])
+  customer        Customer?        @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  orderItems      OrderItem[]
+  payments        Payment[]
+  aiConversations AiConversation[]
+
+  @@index([storeId])
+  @@index([tableId])
+  @@index([createdAt])
+  @@index([storeId, createdAt])
+  @@map("orders")
+}
+
+model OrderItem {
+  id        String   @id @default(uuid())
+  orderId   String   @map("order_id")
+  menuId    String   @map("menu_id")
+  quantity  Int      @default(1)
+  unitPrice Decimal  @map("unit_price") @db.Decimal(10, 2)
+  subtotal  Decimal  @db.Decimal(10, 2)
+  options   Json?    // {"size": "large", "spice": "mild"}
+  notes     String?  @db.Text
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  menu  Menu  @relation(fields: [menuId], references: [id])
+
+  @@index([orderId])
+  @@index([menuId])
+  @@map("order_items")
+}
+
+model Payment {
+  id            String        @id @default(uuid())
+  orderId       String        @map("order_id")
+  transactionId String?       @unique @map("transaction_id") @db.VarChar(100)
+  method        PaymentMethod
+  amount        Decimal       @db.Decimal(10, 2)
+  status        PaymentStatus @default(pending)
+  pgResponse    Json?         @map("pg_response") // PG사 응답 전체
+  cardReaderId  String?       @map("card_reader_id") @db.VarChar(50)
+  createdAt     DateTime      @default(now()) @map("created_at")
+  completedAt   DateTime?     @map("completed_at")
+
+  // Relations
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@index([transactionId])
+  @@map("payments")
+}
+
+// ============================================
+// FEATURE TABLES
+// ============================================
+
+model HistoryLog {
+  id          String    @id @default(uuid())
+  userId      String    @map("user_id")
+  storeId     String    @map("store_id")
+  action      String    @db.VarChar(50) // 'create', 'update', 'delete'
+  entityType  String    @map("entity_type") @db.VarChar(50) // 'menu', 'table', 'category'
+  entityId    String    @map("entity_id")
+  entityName  String?   @map("entity_name") @db.VarChar(200) // 엔티티 이름 (표시용)
+  oldData     Json?     @map("old_data") // 이전 상태
+  newData     Json?     @map("new_data") // 새로운 상태
+  metadata    Json?     // IP, userAgent, reason 등 메타데이터
+  isUndoable  Boolean   @default(true) @map("is_undoable")
+  undoDeadline DateTime? @map("undo_deadline") // Undo 가능한 기한
+  undoneAt    DateTime? @map("undone_at") // Undo 실행 시간
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  // Relations
+  user  User  @relation(fields: [userId], references: [id])
+  store Store @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  undoStacks UndoStack[] // Undo 스택과의 관계
+
+  @@index([storeId])
+  @@index([userId])
+  @@index([entityType, entityId])
+  @@index([storeId, createdAt])
+  @@map("history_logs")
+}
+
+model UndoStack {
+  id          String   @id @default(uuid())
+  historyLogId String  @map("history_log_id")
+  userId      String   @map("user_id")
+  redoneAt    DateTime? @map("redone_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  // Relations
+  historyLog  HistoryLog @relation(fields: [historyLogId], references: [id], onDelete: Cascade)
+  user        User       @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([historyLogId])
+  @@map("undo_stack")
+}
+
+model AiConversation {
+  id         String             @id @default(uuid())
+  storeId    String             @map("store_id")
+  userId     String?            @map("user_id")
+  customerId String?            @map("customer_id")
+  orderId    String?            @map("order_id")
+  sessionId  String             @map("session_id") @db.VarChar(100)
+  type       AiConversationType
+  messages   Json[]             // Array of {role, content, timestamp}
+  createdAt  DateTime           @default(now()) @map("created_at")
+  endedAt    DateTime?          @map("ended_at")
+
+  // Relations
+  store    Store     @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  user     User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  customer Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  order    Order?    @relation(fields: [orderId], references: [id], onDelete: SetNull)
+
+  @@index([storeId])
+  @@index([sessionId])
+  @@map("ai_conversations")
+}
+
+model AnalyticsDaily {
+  id              String   @id @default(uuid())
+  storeId         String   @map("store_id")
+  date            DateTime @db.Date
+  totalRevenue    Decimal  @default(0) @map("total_revenue") @db.Decimal(12, 2)
+  totalOrders     Int      @default(0) @map("total_orders")
+  avgOrderValue   Decimal  @default(0) @map("avg_order_value") @db.Decimal(10, 2)
+  menuPerformance Json?    @map("menu_performance") // {"menu_id": {"quantity": 10, "revenue": 100000}}
+  hourlySales     Json?    @map("hourly_sales") // {"09": 50000, "10": 80000, ...}
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  store Store @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  @@unique([storeId, date])
+  @@index([storeId, date])
+  @@map("analytics_daily")
+}
+
+model SmsVerification {
+  id               String   @id @default(uuid())
+  phone            String   @db.VarChar(20)
+  verificationCode String   @map("verification_code") @db.VarChar(6)
+  isVerified       Boolean  @default(false) @map("is_verified")
+  expiresAt        DateTime @map("expires_at")
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  @@index([phone])
+  @@index([expiresAt])
+  @@map("sms_verifications")
+}

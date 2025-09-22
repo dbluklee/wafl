@@ -3,12 +3,7 @@
   "version": "1.0.0",
   "description": "AI POS System - AI Agent 기반 차세대 외식업 주문결제 시스템",
   "private": true,
-  "workspaces": [
-    "frontend/*",
-    "backend/core/*",
-    "backend/support/*",
-    "backend/shared/*"
-  ],
+  "packageManager": "pnpm@9.0.0",
   "scripts": {
     "dev": "concurrently \"npm run dev:frontend\" \"npm run dev:backend\"",
     "build": "npm run build --workspaces",

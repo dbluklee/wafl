@@ -1,0 +1,8 @@
+packages:
+  # Apps
+  - 'apps/frontend/*'
+  - 'apps/backend/core/*'
+  - 'apps/backend/support/*'
+
+  # Shared packages
+  - 'packages/*'
